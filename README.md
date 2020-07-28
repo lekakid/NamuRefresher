@@ -20,15 +20,9 @@ Tampermonkey 기준
 
 전체 내용을 삭제하고 [배포 중인 스크립트](script.js)를 붙여넣고 저장합니다. (파일 > 저장 혹은 Ctrl+S)
 
-![image](https://user-images.githubusercontent.com/1362809/88549877-cbeb0580-d05b-11ea-9142-9ad4726998dd.png)
+![image](https://user-images.githubusercontent.com/1362809/88633544-1cac3e00-d0f0-11ea-9e99-4b4638ff2cfa.png)
 
-나무라이브 채널에 접속한 후에 해당 로더 마크가 정상적으로 작동하는지 확인합니다.
-
-설정
-----
-![image](https://user-images.githubusercontent.com/1362809/88550000-f472ff80-d05b-11ea-8647-4c186628eee9.png)
-
-로더 마크를 클릭하면 새로고침 시간을 3,5,10초로 조절할 수 있습니다.(기본값 5초)
+나무라이브 채널에 접속한 후에 상단에 설정 메뉴가 생겼는지 확인합니다.
 
 라이선스
 --------
