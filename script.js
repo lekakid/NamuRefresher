@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @auther      LeKAKiD
-// @version     1.1.0
+// @version     1.2.1
 // @exclude     https://namu.live/b/*/write
 // @include     https://namu.live/b/*
 // @run-at      document-start
@@ -256,7 +256,7 @@ function initRefresher() {
         if (document.hidden) {
             stopRefresher();
         } else {
-            if (loader_loop === null) {
+            if (loader_loop === null && Setting.useRefresh) {
                 $(document).ready(function() {
                     initLoader();
                     loader_loop = setInterval(tryRefreshArticle, Setting.refreshTime * 1000);
@@ -434,9 +434,11 @@ function initSettingView() {
                 break;
         }
         $(this).text('새로고침 시간 간격: ' + Setting.refreshTime + '초');
-        clearInterval(loader_loop);
-        initLoader();
-        loader_loop = setInterval(tryRefreshArticle, Setting.refreshTime * 1000);
+        if(Setting.useRefresh) {
+            clearInterval(loader_loop);
+            initLoader();
+            loader_loop = setInterval(tryRefreshArticle, Setting.refreshTime * 1000);
+        }
         saveSetting();
         return false;
     });
