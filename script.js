@@ -1,16 +1,16 @@
 // ==UserScript==
 // @name        NamuRefresher
-// @auther      LeKAKiD
-// @version     1.2.2
+// @author      LeKAKiD
+// @version     1.2.3
 // @exclude     https://namu.live/b/*/write
 // @include     https://namu.live/b/*
 // @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
-// @grant       GM_addStyle
-// @grant       GM_getValue
-// @grant       GM_setValue
+// @grant       GM.getValue
+// @grant       GM.setValue
 // ==/UserScript==
-GM_addStyle (`
+var NRstyle = document.createElement('style');
+NRstyle.textContent = `
     @keyframes highlight{
         0% {
             background-color: rgba(240, 248, 255, 1);
@@ -70,7 +70,8 @@ GM_addStyle (`
     .preview-hide {
         display:none;
     }
-`);
+`;
+document.head.append(NRstyle);
 
 var loader_loop = null;
 var list = null;
@@ -322,7 +323,10 @@ var DefaultSetting = {
     hideNotice: false,
     hideAvatar: true,
     usePreviewFilter: false,
-    filteredCategory: {}
+    filteredCategory: {
+        전체: false,
+        일반: false
+    }
 }
 var Setting = {};
 
@@ -332,13 +336,13 @@ function resetSetting() {
     loadSetting();
 }
 
-function loadSetting() {
-    Setting.useRefresh = GM_getValue('Setting.useRefresh', DefaultSetting.useRefresh);
-    Setting.refreshTime = GM_getValue('Setting.refreshTime', DefaultSetting.refreshTime);
-    Setting.hideNotice = GM_getValue('Setting.hideNotice', DefaultSetting.hideNotice);
-    Setting.hideAvatar = GM_getValue('Setting.hideAvatar', DefaultSetting.hideAvatar);
-    Setting.usePreviewFilter = GM_getValue('Setting.usePreviewFilter', DefaultSetting.usePreviewFilter);
-    Setting.filteredCategory = JSON.parse(GM_getValue('Setting.filteredCategory.' + board, JSON.stringify(DefaultSetting.filteredCategory)));
+async function loadSetting() {
+    Setting.useRefresh = await GM.getValue('Setting.useRefresh', DefaultSetting.useRefresh);
+    Setting.refreshTime = await GM.getValue('Setting.refreshTime', DefaultSetting.refreshTime);
+    Setting.hideNotice = await GM.getValue('Setting.hideNotice', DefaultSetting.hideNotice);
+    Setting.hideAvatar = await GM.getValue('Setting.hideAvatar', DefaultSetting.hideAvatar);
+    Setting.usePreviewFilter = await GM.getValue('Setting.usePreviewFilter', DefaultSetting.usePreviewFilter);
+    Setting.filteredCategory = JSON.parse(await GM.getValue('Setting.filteredCategory.' + board, JSON.stringify(DefaultSetting.filteredCategory)));
 
     $('.refresher-setting-userefresh').text(Setting.useRefresh ? '게시물 자동 새로고침 사용' : '게시물 자동 새로고침 안함');
     $('.refresher-setting-refreshtime').text('새로고침 시간 간격: ' + Setting.refreshTime + '초');
@@ -365,13 +369,13 @@ function loadSetting() {
     });
 }
 
-function saveSetting() {
-    GM_setValue('Setting.useRefresh', Setting.useRefresh);
-    GM_setValue('Setting.refreshTime', Setting.refreshTime);
-    GM_setValue('Setting.hideNotice', Setting.hideNotice);
-    GM_setValue('Setting.hideAvatar', Setting.hideAvatar);
-    GM_setValue('Setting.usePreviewFilter', Setting.usePreviewFilter);
-    GM_setValue('Setting.filteredCategory.' + board, JSON.stringify(Setting.filteredCategory));
+async function saveSetting() {
+    await GM.setValue('Setting.useRefresh', Setting.useRefresh);
+    await GM.setValue('Setting.refreshTime', Setting.refreshTime);
+    await GM.setValue('Setting.hideNotice', Setting.hideNotice);
+    await GM.setValue('Setting.hideAvatar', Setting.hideAvatar);
+    await GM.setValue('Setting.usePreviewFilter', Setting.usePreviewFilter);
+    await GM.setValue('Setting.filteredCategory.' + board, JSON.stringify(Setting.filteredCategory));
 }
 
 function initSettingView() {
@@ -399,6 +403,7 @@ function initSettingView() {
 
     $(menubtn).appendTo(nav).append(menulist);
 
+    
     var category = $('.board-category a');
     $('.refresher-previewfilter').append('<a class="dropdown-item refresher-previewfilter-category" category="전체">전체: 보이기</a>');
     category.each(function(index, item) {
@@ -406,7 +411,7 @@ function initSettingView() {
         data = data == "전체" ? "일반" : data;
         $('.refresher-previewfilter').append('<a class="dropdown-item refresher-previewfilter-category" category="' + data + '">' + data + ': 보이기</a>');
     });
-
+    
     $('.refresher-setting-reset').click(function() {
         resetSetting();
         location.reload();
@@ -429,16 +434,16 @@ function initSettingView() {
             case 3:
                 Setting.refreshTime = 5;
                 break;
-            case 5:
-                Setting.refreshTime = 10;
+                case 5:
+                    Setting.refreshTime = 10;
                 break;
             case 10:
                 Setting.refreshTime = 3;
                 break;
-        }
-        $(this).text('새로고침 시간 간격: ' + Setting.refreshTime + '초');
-        if(Setting.useRefresh) {
-            clearInterval(loader_loop);
+            }
+            $(this).text('새로고침 시간 간격: ' + Setting.refreshTime + '초');
+            if(Setting.useRefresh) {
+                clearInterval(loader_loop);
             initLoader();
             loader_loop = setInterval(tryRefreshArticle, Setting.refreshTime * 1000);
         }
@@ -485,7 +490,7 @@ function initSettingView() {
         saveSetting();
         return false;
     });
-
+    
     $('.refresher-previewfilter-category').click(function() {
         var category = $(this).attr('category');
         Setting.filteredCategory[category] = !Setting.filteredCategory[category];
@@ -496,12 +501,12 @@ function initSettingView() {
     });
 }
 
-function init() {
+async function init() {
     board = $('div.board-title > a').not('.subscribe-btn').attr('href').replace('/b/', '');
     list = $('.list-table');
 
     initSettingView();
-    loadSetting();
+    await loadSetting();
 
     if(Setting.useRefresh)
         initRefresher();
