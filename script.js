@@ -115,7 +115,7 @@ function removeLoader() {
 }
 
 var current_request = null;
-function tryRefresh() {
+function tryRefreshArticle() {
     if(current_request !== null) {
         current_request.abort();
         initLoader();
@@ -129,10 +129,32 @@ function tryRefresh() {
         success: (data) => {
             current_request = null;
             setLoader();
-            refreshList(data);
+            refreshArticle(data);
         },
         error: () => {
             current_request = null;
+            console.log("AJAX Request Failed");
+        }
+    });
+}
+
+var comment_requeset = null;
+function tryRefreshComment() {
+    if(comment_requeset !== null) {
+        comment_requeset.abort();
+    }
+
+    comment_requeset = $.ajax({
+        type: "GET",
+        url: window.location.href,
+        timeout: 2000,
+        dataType: "html",
+        success: (data) => {
+            comment_requeset = null;
+            refreshComment(data);
+        },
+        error: () => {
+            comment_requeset = null;
             console.log("AJAX Request Failed");
         }
     });
@@ -185,7 +207,7 @@ function isToday(datetime) {
     return false;
 }
 
-function refreshList(data) {
+function refreshArticle(data) {
     var newlist = $(data).find('.list-table').find('a.vrow').not('.notice');
     if(newlist.length == 0)
         return;
@@ -215,12 +237,20 @@ function refreshList(data) {
     applyPreview();
 }
 
+function refreshComment(data) {
+    $('.article-comment > .list-area').remove();
+    $('.article-comment > .title').after($(data).find('.article-comment > .list-area'));
+
+    if(Setting.hideAvatar)
+        hideAvatar();
+}
+
 function initRefresher() {
     if(loader_loop !== null) {
         stopRefresher();
     }
     initLoader();
-    loader_loop = setInterval(tryRefresh, Setting.refreshTime * 1000);
+    loader_loop = setInterval(tryRefreshArticle, Setting.refreshTime * 1000);
 
     document.addEventListener("visibilitychange", () => {
         if (document.hidden) {
@@ -229,7 +259,7 @@ function initRefresher() {
             if (loader_loop === null) {
                 $(document).ready(function() {
                     initLoader();
-                    loader_loop = setInterval(tryRefresh, Setting.refreshTime * 1000);
+                    loader_loop = setInterval(tryRefreshArticle, Setting.refreshTime * 1000);
                 });
             }
         }
@@ -274,6 +304,15 @@ function applyPreview() {
     });
 }
 
+function applyReplyRefresh() {
+    var btn = '<a class="btn btn-success" href="#"><span class="icon ion-android-refresh"></span> 새로고침</a>';
+
+    $(btn).insertAfter('.article-comment .title a').click(function() {
+        tryRefreshComment();
+        return false;
+    });
+}
+
 var DefaultSetting = {
     useRefresh: true,
     refreshTime: 5,
@@ -298,10 +337,10 @@ function loadSetting() {
     Setting.usePreviewFilter = GM_getValue('Setting.usePreviewFilter', DefaultSetting.usePreviewFilter);
     Setting.filteredCategory = JSON.parse(GM_getValue('Setting.filteredCategory.' + board, JSON.stringify(DefaultSetting.filteredCategory)));
 
-    $('.refresher-setting-userefresh').text(Setting.useRefresh ? '새로고침 사용' : '새로고침 사용 안함');
-    $('.refresher-setting-refreshtime').text('새로고침 시간: ' + Setting.refreshTime + '초');
-    $('.refresher-setting-hidenotice').text(Setting.hideNotice ? '채널 공지 숨김' : '채널 공지 보임');
-    $('.refresher-setting-hideavatar').text(Setting.hideAvatar ? '프로필 아바타 숨김' : '프로필 아바타 보임');
+    $('.refresher-setting-userefresh').text(Setting.useRefresh ? '게시물 자동 새로고침 사용' : '게시물 자동 새로고침 안함');
+    $('.refresher-setting-refreshtime').text('새로고침 시간 간격: ' + Setting.refreshTime + '초');
+    $('.refresher-setting-hidenotice').text(Setting.hideNotice ? '채널 공지 숨기기' : '채널 공지 보이기');
+    $('.refresher-setting-hideavatar').text(Setting.hideAvatar ? '프로필 아바타 숨기기' : '프로필 아바타 보이기');
     $('.refresher-setting-usepreviewfilter').text(Setting.usePreviewFilter ? '미리보기 필터 사용 중...' : '미리보기 필터 사용 안함');
 
     if(!Setting.usePreviewFilter) {
@@ -315,10 +354,10 @@ function loadSetting() {
             Setting.filteredCategory[category] = false;
 
         if(value) {
-            $(item).text($(item).attr('category') + ": 숨김");
+            $(item).text($(item).attr('category') + ": 숨기기");
         }
         else {
-            $(item).text($(item).attr('category') + ": 보임");
+            $(item).text($(item).attr('category') + ": 보이기");
         }
     });
 }
@@ -345,24 +384,24 @@ function initSettingView() {
     var menulist = `<div class="dropdown-menu left">
                     <div class="dropdown-item refresher-setting-reset">설정 초기화</div>
                     <div class="dropdown-divider"></div>
-                    <div class="dropdown-item refresher-setting-userefresh">새로고침 사용</div>
-                    <div class="dropdown-item refresher-setting-refreshtime">새로고침 시간: 5초</div>
+                    <div class="dropdown-item refresher-setting-userefresh">새로고침 기능</div>
+                    <div class="dropdown-item refresher-setting-refreshtime">시간 간격란</div>
                     <div class="dropdown-divider"></div>
-                    <div class="dropdown-item refresher-setting-hidenotice">채널 공지 보임</div>
-                    <div class="dropdown-item refresher-setting-hideavatar">프로필 아바타 숨김</div>
+                    <div class="dropdown-item refresher-setting-hidenotice">공지사항 숨기기 여부</div>
+                    <div class="dropdown-item refresher-setting-hideavatar">프로필 아바타 숨기기 여부</div>
                     <div class="dropdown-divider"></div>
-                    <div class="dropdown-item refresher-setting-usepreviewfilter">미리보기 필터 사용 안함</div>
+                    <div class="dropdown-item refresher-setting-usepreviewfilter">미리보기 필터 기능</div>
                     <div class="refresher-previewfilter"></div>
                 </div>`;
 
     $(menubtn).appendTo(nav).append(menulist);
 
     var category = $('.board-category a');
-    $('.refresher-previewfilter').append('<a class="dropdown-item refresher-previewfilter-category" category="전체">전체: 보임</a>');
+    $('.refresher-previewfilter').append('<a class="dropdown-item refresher-previewfilter-category" category="전체">전체: 보이기</a>');
     category.each(function(index, item) {
         var data = $(item).text();
         data = data == "전체" ? "일반" : data;
-        $('.refresher-previewfilter').append('<a class="dropdown-item refresher-previewfilter-category" category="' + data + '">' + data + ': 보임</a>');
+        $('.refresher-previewfilter').append('<a class="dropdown-item refresher-previewfilter-category" category="' + data + '">' + data + ': 보이기</a>');
     });
 
     $('.refresher-setting-reset').click(function() {
@@ -372,11 +411,11 @@ function initSettingView() {
     $('.refresher-setting-userefresh').click(function() {
         Setting.useRefresh = !Setting.useRefresh;
         if(Setting.useRefresh) {
-            $(this).text('새로고침 사용');
+            $(this).text('게시물 자동 새로고침 사용');
             initRefresher();
         }
         else {
-            $(this).text('새로고침 사용 안함');
+            $(this).text('게시물 자동 새로고침 안함');
             stopRefresher();
         }
         saveSetting();
@@ -394,21 +433,21 @@ function initSettingView() {
                 Setting.refreshTime = 3;
                 break;
         }
-        $(this).text('새로고침 시간: ' + Setting.refreshTime + '초');
+        $(this).text('새로고침 시간 간격: ' + Setting.refreshTime + '초');
         clearInterval(loader_loop);
         initLoader();
-        loader_loop = setInterval(tryRefresh, Setting.refreshTime * 1000);
+        loader_loop = setInterval(tryRefreshArticle, Setting.refreshTime * 1000);
         saveSetting();
         return false;
     });
     $('.refresher-setting-hidenotice').click(function() {
         Setting.hideNotice = !Setting.hideNotice;
         if(Setting.hideNotice) {
-            $(this).text('채널 공지 숨김');
+            $(this).text('채널 공지 숨기기');
             hideNotice();
         }
         else {
-            $(this).text('채널 공지 보임');
+            $(this).text('채널 공지 보이기');
             showNotice();
         }
         saveSetting();
@@ -417,11 +456,11 @@ function initSettingView() {
     $('.refresher-setting-hideavatar').click(function() {
         Setting.hideAvatar = !Setting.hideAvatar;
         if(Setting.hideAvatar) {
-            $('.refresher-setting-hideavatar').text('프로필 아바타 숨김');
+            $('.refresher-setting-hideavatar').text('프로필 아바타 숨기기');
             hideAvatar();
         }
         else {
-            $('.refresher-setting-hideavatar').text('프로필 아바타 보임');
+            $('.refresher-setting-hideavatar').text('프로필 아바타 보이기');
             showAvatar();
         }
         saveSetting();
@@ -445,7 +484,7 @@ function initSettingView() {
     $('.refresher-previewfilter-category').click(function() {
         var category = $(this).attr('category');
         Setting.filteredCategory[category] = !Setting.filteredCategory[category];
-        $(this).text(category + (Setting.filteredCategory[category] ? ": 숨김" : ": 보임"));
+        $(this).text(category + (Setting.filteredCategory[category] ? ": 숨기기" : ": 보이기"));
         applyPreview();
         saveSetting();
         return false;
@@ -469,6 +508,7 @@ function init() {
         hideAvatar();
 
     applyPreview();
+    applyReplyRefresh();
 }
 
 init();
