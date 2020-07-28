@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @auther      LeKAKiD
-// @version     1.0.0
+// @version     1.1.0
 // @exclude     https://namu.live/b/*/write
 // @include     https://namu.live/b/*
 // @run-at      document-start
@@ -66,80 +66,59 @@ GM_addStyle (`
     #time_display.fixed {
         top: 90px;
     }
+
+    .preview-hide {
+        display:none;
+    }
 `);
+
+var loader_loop = null;
+var list = null;
+var board = null;
 
 function initLoader() {
     removeLoader();
     $('.root-container').append('<div id="article_loader"></div>');
-    $('.root-container').append('<div id="time_display">0초</div>');
 
     var loader = $('#article_loader');
-    var time_display = $('#time_display');
 
     if ($(window).scrollTop() < 50) {
         loader.addClass('fixed');
-        time_display.addClass('fixed');
     } else {
         loader.removeClass('fixed');
-        time_display.removeClass('fixed');
     }
 
     $(window).on('scroll', function () {
         if ($(window).scrollTop() < 50) {
             loader.addClass('fixed');
-            time_display.addClass('fixed');
         } else {
             loader.removeClass('fixed');
-            time_display.removeClass('fixed');
         }
     });
 
-    loader.click(function() {
-        clearInterval(loader_loop);
-
-        var refreshtime = GM_getValue('refreshtime', 5);
-
-        switch(refreshtime) {
-            case 3:
-                refreshtime = 5;
-                break;
-            case 5:
-                refreshtime = 10;
-                break;
-            case 10:
-                refreshtime = 3;
-                break;
-        }
-
-        GM_setValue('refreshtime', refreshtime);
-        time_display.text(refreshtime + '초');
-        time_display.css('opacity', '1');
-        time_display.fadeTo(300, 0);
-        setLoader(refreshtime);
-        loader_loop = setInterval(function() {
-            loader.css('animation', '');
-            getData(refreshtime);
-        }, refreshtime * 1000);
-    });
+    setLoader();
 }
 
-function setLoader(time) {
+function setLoader() {
     var loader = $('#article_loader');
 
     if (loader) {
-        loader.css('animation', 'loaderspin ease-in-out ' + time + 's');
+        loader.removeAttr('style');
+        setTimeout(function() {
+            loader.css('animation', 'loaderspin ' + Setting.refreshTime + 's ease-in-out');
+        }, 50);
     }
 }
 
 function removeLoader() {
     $('#article_loader').remove();
-    $('#time_display').remove();
 }
 
-function getData(interval) {
-    if(current_request != null) {
+var current_request = null;
+function tryRefresh() {
+    if(current_request !== null) {
         current_request.abort();
-        setLoader(0, 'init');
+        initLoader();
     }
 
     current_request = $.ajax({
@@ -149,7 +128,7 @@ function getData(interval) {
         dataType: "html",
         success: (data) => {
             current_request = null;
-            setLoader(interval);
+            setLoader();
             refreshList(data);
         },
         error: () => {
@@ -232,40 +211,264 @@ function refreshList(data) {
         if(isToday(datetime))
             $(item).find('time').text(getTimestamp(datetime));
     });
+
+    applyPreview();
 }
 
-var current_request = null;
-var loader_loop = null;
-var list = null;
 function initRefresher() {
-    list = $('.list-table');
-
-    var refreshtime = GM_getValue('refreshtime', 5);
-
+    if(loader_loop !== null) {
+        stopRefresher();
+    }
     initLoader();
-    setLoader(refreshtime);
-    loader_loop = setInterval(function() {
-        $('#article_loader').css('animation', '');
-        getData(refreshtime);
-    }, refreshtime * 1000);
+    loader_loop = setInterval(tryRefresh, Setting.refreshTime * 1000);
 
     document.addEventListener("visibilitychange", () => {
         if (document.hidden) {
-            removeLoader();
-            clearInterval(loader_loop);
-            loader_loop = null;
+            stopRefresher();
         } else {
             if (loader_loop === null) {
                 $(document).ready(function() {
                     initLoader();
-                    loader_loop = setInterval(function() {
-                        $('#article_loader').css('animation', '');
-                        getData(refreshtime);
-                    }, refreshtime * 1000);
+                    loader_loop = setInterval(tryRefresh, Setting.refreshTime * 1000);
                 });
             }
         }
     });
 }
 
-initRefresher();
+function stopRefresher() {
+    clearInterval(loader_loop);
+    loader_loop = null;
+    removeLoader();
+}
+
+function hideNotice() {
+    list.find('.notice').css('display', 'none');
+}
+
+function showNotice() {
+    list.find('.notice').removeAttr('style');
+}
+
+function hideAvatar() {
+    $('.avatar').css('display', 'none');
+    $('.input-wrapper > .input').css('width', 'calc(100% - 4.5rem - .5rem)');
+}
+
+function showAvatar() {
+    $('.avatar').removeAttr('style');
+    $('.input-wrapper > .input').removeAttr('style');
+}
+
+function applyPreview() {
+    list.children().each(function(index, item) {
+        var tag = $(item).find('span.tag').text();
+        tag = (tag == "") ? "일반" : tag;
+
+        if(Setting.usePreviewFilter && (Setting.filteredCategory['전체'] || Setting.filteredCategory[tag])) {
+            $(item).find('.vrow-preview').css('display', 'none');
+        }
+        else {
+            $(item).find('.vrow-preview').removeAttr('style');
+        }
+    });
+}
+
+var DefaultSetting = {
+    useRefresh: true,
+    refreshTime: 5,
+    hideNotice: false,
+    hideAvatar: true,
+    usePreviewFilter: false,
+    filteredCategory: {}
+}
+var Setting = {};
+
+function resetSetting() {
+    Setting = JSON.parse(JSON.stringify(DefaultSetting));
+    saveSetting();
+    loadSetting();
+}
+
+function loadSetting() {
+    Setting.useRefresh = GM_getValue('Setting.useRefresh', DefaultSetting.useRefresh);
+    Setting.refreshTime = GM_getValue('Setting.refreshTime', DefaultSetting.refreshTime);
+    Setting.hideNotice = GM_getValue('Setting.hideNotice', DefaultSetting.hideNotice);
+    Setting.hideAvatar = GM_getValue('Setting.hideAvatar', DefaultSetting.hideAvatar);
+    Setting.usePreviewFilter = GM_getValue('Setting.usePreviewFilter', DefaultSetting.usePreviewFilter);
+    Setting.filteredCategory = JSON.parse(GM_getValue('Setting.filteredCategory.' + board, JSON.stringify(DefaultSetting.filteredCategory)));
+
+    $('.refresher-setting-userefresh').text(Setting.useRefresh ? '새로고침 사용' : '새로고침 사용 안함');
+    $('.refresher-setting-refreshtime').text('새로고침 시간: ' + Setting.refreshTime + '초');
+    $('.refresher-setting-hidenotice').text(Setting.hideNotice ? '채널 공지 숨김' : '채널 공지 보임');
+    $('.refresher-setting-hideavatar').text(Setting.hideAvatar ? '프로필 아바타 숨김' : '프로필 아바타 보임');
+    $('.refresher-setting-usepreviewfilter').text(Setting.usePreviewFilter ? '미리보기 필터 사용 중...' : '미리보기 필터 사용 안함');
+
+    if(!Setting.usePreviewFilter) {
+        $('.refresher-previewfilter').hide();
+    }
+
+    $('a[category]').each(function(index, item) {
+        var category = $(item).attr('category');
+        var value = Setting.filteredCategory[category];
+        if(value === undefined)
+            Setting.filteredCategory[category] = false;
+
+        if(value) {
+            $(item).text($(item).attr('category') + ": 숨김");
+        }
+        else {
+            $(item).text($(item).attr('category') + ": 보임");
+        }
+    });
+}
+
+function saveSetting() {
+    GM_setValue('Setting.useRefresh', Setting.useRefresh);
+    GM_setValue('Setting.refreshTime', Setting.refreshTime);
+    GM_setValue('Setting.hideNotice', Setting.hideNotice);
+    GM_setValue('Setting.hideAvatar', Setting.hideAvatar);
+    GM_setValue('Setting.usePreviewFilter', Setting.usePreviewFilter);
+    GM_setValue('Setting.filteredCategory.' + board, JSON.stringify(Setting.filteredCategory));
+}
+
+function initSettingView() {
+    $('.refresher-setting').remove();
+
+    var nav = $('ul.navbar-nav').first();
+    var menubtn = `<li class="nav-item dropdown">
+                    <a aria-expanded="false" class="nav-link dropdown-toggle" href="#" title="Refresher 설정" data-toggle="dropdown" aria-haspopup="true">
+                    <span class="hidden-sm-down">Refresher 설정</span>
+                    <span class="hidden-md-up">Refresher 설정</span>
+                    </a>
+                </li>`;
+    var menulist = `<div class="dropdown-menu left">
+                    <div class="dropdown-item refresher-setting-reset">설정 초기화</div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item refresher-setting-userefresh">새로고침 사용</div>
+                    <div class="dropdown-item refresher-setting-refreshtime">새로고침 시간: 5초</div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item refresher-setting-hidenotice">채널 공지 보임</div>
+                    <div class="dropdown-item refresher-setting-hideavatar">프로필 아바타 숨김</div>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-item refresher-setting-usepreviewfilter">미리보기 필터 사용 안함</div>
+                    <div class="refresher-previewfilter"></div>
+                </div>`;
+
+    $(menubtn).appendTo(nav).append(menulist);
+
+    var category = $('.board-category a');
+    $('.refresher-previewfilter').append('<a class="dropdown-item refresher-previewfilter-category" category="전체">전체: 보임</a>');
+    category.each(function(index, item) {
+        var data = $(item).text();
+        data = data == "전체" ? "일반" : data;
+        $('.refresher-previewfilter').append('<a class="dropdown-item refresher-previewfilter-category" category="' + data + '">' + data + ': 보임</a>');
+    });
+
+    $('.refresher-setting-reset').click(function() {
+        resetSetting();
+        location.reload();
+    });
+    $('.refresher-setting-userefresh').click(function() {
+        Setting.useRefresh = !Setting.useRefresh;
+        if(Setting.useRefresh) {
+            $(this).text('새로고침 사용');
+            initRefresher();
+        }
+        else {
+            $(this).text('새로고침 사용 안함');
+            stopRefresher();
+        }
+        saveSetting();
+        return false;
+    });
+    $('.refresher-setting-refreshtime').click(function() {
+        switch(Setting.refreshTime) {
+            case 3:
+                Setting.refreshTime = 5;
+                break;
+            case 5:
+                Setting.refreshTime = 10;
+                break;
+            case 10:
+                Setting.refreshTime = 3;
+                break;
+        }
+        $(this).text('새로고침 시간: ' + Setting.refreshTime + '초');
+        clearInterval(loader_loop);
+        initLoader();
+        loader_loop = setInterval(tryRefresh, Setting.refreshTime * 1000);
+        saveSetting();
+        return false;
+    });
+    $('.refresher-setting-hidenotice').click(function() {
+        Setting.hideNotice = !Setting.hideNotice;
+        if(Setting.hideNotice) {
+            $(this).text('채널 공지 숨김');
+            hideNotice();
+        }
+        else {
+            $(this).text('채널 공지 보임');
+            showNotice();
+        }
+        saveSetting();
+        return false;
+    });
+    $('.refresher-setting-hideavatar').click(function() {
+        Setting.hideAvatar = !Setting.hideAvatar;
+        if(Setting.hideAvatar) {
+            $('.refresher-setting-hideavatar').text('프로필 아바타 숨김');
+            hideAvatar();
+        }
+        else {
+            $('.refresher-setting-hideavatar').text('프로필 아바타 보임');
+            showAvatar();
+        }
+        saveSetting();
+        return false;
+    });
+    $('.refresher-setting-usepreviewfilter').click(function() {
+        Setting.usePreviewFilter = !Setting.usePreviewFilter;
+        if(Setting.usePreviewFilter) {
+            $(this).text('미리보기 필터 사용 중...');
+            $('.refresher-previewfilter').show();
+        }
+        else {
+            $(this).text('미리보기 필터 사용 안함');
+            $('.refresher-previewfilter').hide();
+        }
+        applyPreview();
+        saveSetting();
+        return false;
+    });
+
+    $('.refresher-previewfilter-category').click(function() {
+        var category = $(this).attr('category');
+        Setting.filteredCategory[category] = !Setting.filteredCategory[category];
+        $(this).text(category + (Setting.filteredCategory[category] ? ": 숨김" : ": 보임"));
+        applyPreview();
+        saveSetting();
+        return false;
+    });
+}
+
+function init() {
+    board = $('div.board-title > a').not('.subscribe-btn').attr('href').replace('/b/', '');
+    list = $('.list-table');
+
+    initSettingView();
+    loadSetting();
+
+    if(Setting.useRefresh)
+        initRefresher();
+
+    if(Setting.hideNotice)
+        hideNotice();
+
+    if(Setting.hideAvatar)
+        hideAvatar();
+
+    applyPreview();
+}
+
+init();
