@@ -1,10 +1,9 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.2.3
-// @exclude     https://namu.live/b/*/write
+// @version     1.3.0
 // @include     https://namu.live/b/*
-// @run-at      document-start
+// @run-at      document-end
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
 // @grant       GM.getValue
 // @grant       GM.setValue
@@ -72,6 +71,21 @@ NRstyle.textContent = `
     }
 `;
 document.head.append(NRstyle);
+
+const SETTING_RESET = '설정 초기화';
+const USE_REFRESH_ENABLED = '게시물 자동 새로고침 중단';
+const USE_REFRESH_DISABLED = '게시물 자동 새로고침 사용 중';
+const REFESH_TIME_INFO = '새로고침 시간 간격(초):';
+const HIDE_NOTICE_ENABLED = '채널 공지 숨김';
+const HIDE_NOTICE_DISABLED = '채널 공지 표시';
+const HIDE_AVATAR_ENABLED = '프로필 아바타 숨김';
+const HIDE_AVATAR_DISABLED = '프로필 아바타 표시';
+const SET_MY_IMAGE = '복사한 주소를 자짤로 등록';
+const MY_IMAGE_PROMPT = '자짤로 사용할 이미지 주소를 입력';
+const PREVIEW_FILTER_ENABLED = '미리보기 필터 사용 중';
+const PREVIEW_FILTER_DISABLED = '미리보기 필터 사용 안함';
+const HIDE = "숨김"
+const SHOW = "표시"
 
 var loader_loop = null;
 var list = null;
@@ -261,7 +275,7 @@ function initRefresher() {
             stopRefresher();
         } else {
             if (loader_loop === null && Setting.useRefresh) {
-                $(document).ready(function() {
+                $(document).ready(() => {
                     initLoader();
                     loader_loop = setInterval(tryRefreshArticle, Setting.refreshTime * 1000);
                 });
@@ -294,6 +308,26 @@ function showAvatar() {
     $('.input-wrapper > .input').removeAttr('style');
 }
 
+function applyMyImage() {
+    if(Setting.myImage == '')
+        return;
+
+    var observer = new MutationObserver((mutations) => {
+        for(m of mutations) {
+            if(m.target.className == 'note-editable') {
+                observer.disconnect();
+                $('.note-editable').prepend(`<img src="${Setting.myImage}">`);
+                break;
+            }
+        }
+    });
+    observer.observe(document, {
+        childList: true,
+        subtree: true,
+        attributes: false
+    });
+}
+
 function applyPreview() {
     list.children().each(function(index, item) {
         var tag = $(item).find('span.tag').text();
@@ -311,7 +345,7 @@ function applyPreview() {
 function applyReplyRefresh() {
     var btn = '<a class="btn btn-success" href="#"><span class="icon ion-android-refresh"></span> 새로고침</a>';
 
-    $(btn).insertAfter('.article-comment .title a').click(function() {
+    $(btn).insertAfter('.article-comment .title a').click(() => {
         tryRefreshComment();
         return false;
     });
@@ -322,6 +356,7 @@ var DefaultSetting = {
     refreshTime: 5,
     hideNotice: false,
     hideAvatar: true,
+    myImage: '',
     usePreviewFilter: false,
     filteredCategory: {
         전체: false,
@@ -341,14 +376,15 @@ async function loadSetting() {
     Setting.refreshTime = await GM.getValue('Setting.refreshTime', DefaultSetting.refreshTime);
     Setting.hideNotice = await GM.getValue('Setting.hideNotice', DefaultSetting.hideNotice);
     Setting.hideAvatar = await GM.getValue('Setting.hideAvatar', DefaultSetting.hideAvatar);
+    Setting.myImage = await GM.getValue('Setting.myImage', DefaultSetting.myImage);
     Setting.usePreviewFilter = await GM.getValue('Setting.usePreviewFilter', DefaultSetting.usePreviewFilter);
     Setting.filteredCategory = JSON.parse(await GM.getValue('Setting.filteredCategory.' + board, JSON.stringify(DefaultSetting.filteredCategory)));
 
-    $('.refresher-setting-userefresh').text(Setting.useRefresh ? '게시물 자동 새로고침 사용' : '게시물 자동 새로고침 안함');
-    $('.refresher-setting-refreshtime').text('새로고침 시간 간격: ' + Setting.refreshTime + '초');
-    $('.refresher-setting-hidenotice').text(Setting.hideNotice ? '채널 공지 숨기기' : '채널 공지 보이기');
-    $('.refresher-setting-hideavatar').text(Setting.hideAvatar ? '프로필 아바타 숨기기' : '프로필 아바타 보이기');
-    $('.refresher-setting-usepreviewfilter').text(Setting.usePreviewFilter ? '미리보기 필터 사용 중...' : '미리보기 필터 사용 안함');
+    $('.refresher-setting-userefresh').text(Setting.useRefresh ? USE_REFRESH_DISABLED : USE_REFRESH_ENABLED);
+    $('.refresher-setting-refreshtime').text(REFESH_TIME_INFO + Setting.refreshTime);
+    $('.refresher-setting-hidenotice').text(Setting.hideNotice ? HIDE_NOTICE_DISABLED : HIDE_NOTICE_ENABLED);
+    $('.refresher-setting-hideavatar').text(Setting.hideAvatar ? HIDE_AVATAR_DISABLED : HIDE_AVATAR_ENABLED);
+    $('.refresher-setting-usepreviewfilter').text(Setting.usePreviewFilter ? PREVIEW_FILTER_ENABLED : PREVIEW_FILTER_DISABLED);
 
     if(!Setting.usePreviewFilter) {
         $('.refresher-previewfilter').hide();
@@ -361,10 +397,10 @@ async function loadSetting() {
             Setting.filteredCategory[category] = false;
 
         if(value) {
-            $(item).text($(item).attr('category') + ": 숨기기");
+            $(item).text(`${$(item).attr('category')}: ${HIDE}`);
         }
         else {
-            $(item).text($(item).attr('category') + ": 보이기");
+            $(item).text(`${$(item).attr('category')}: ${SHOW}`);
         }
     });
 }
@@ -374,6 +410,7 @@ async function saveSetting() {
     await GM.setValue('Setting.refreshTime', Setting.refreshTime);
     await GM.setValue('Setting.hideNotice', Setting.hideNotice);
     await GM.setValue('Setting.hideAvatar', Setting.hideAvatar);
+    await GM.setValue('Setting.myImage', Setting.myImage);
     await GM.setValue('Setting.usePreviewFilter', Setting.usePreviewFilter);
     await GM.setValue('Setting.filteredCategory.' + board, JSON.stringify(Setting.filteredCategory));
 }
@@ -389,15 +426,16 @@ function initSettingView() {
                     </a>
                 </li>`;
     var menulist = `<div class="dropdown-menu left">
-                    <div class="dropdown-item refresher-setting-reset">설정 초기화</div>
+                    <div class="dropdown-item refresher-setting-reset">${SETTING_RESET}</div>
                     <div class="dropdown-divider"></div>
-                    <div class="dropdown-item refresher-setting-userefresh">새로고침 기능</div>
-                    <div class="dropdown-item refresher-setting-refreshtime">시간 간격란</div>
+                    <div class="dropdown-item refresher-setting-userefresh">USE_REFRESH</div>
+                    <div class="dropdown-item refresher-setting-refreshtime">REFRESH_TIME_INFO</div>
                     <div class="dropdown-divider"></div>
-                    <div class="dropdown-item refresher-setting-hidenotice">공지사항 숨기기 여부</div>
-                    <div class="dropdown-item refresher-setting-hideavatar">프로필 아바타 숨기기 여부</div>
+                    <div class="dropdown-item refresher-setting-hidenotice">HIDE_NOTICE</div>
+                    <div class="dropdown-item refresher-setting-hideavatar">HIDE_AVATAR</div>
+                    <div class="dropdown-item refresher-setting-setmyimage">${SET_MY_IMAGE}</div>
                     <div class="dropdown-divider"></div>
-                    <div class="dropdown-item refresher-setting-usepreviewfilter">미리보기 필터 기능</div>
+                    <div class="dropdown-item refresher-setting-usepreviewfilter">USE_PREVIEW_FILTER</div>
                     <div class="refresher-previewfilter"></div>
                 </div>`;
 
@@ -405,31 +443,31 @@ function initSettingView() {
 
     
     var category = $('.board-category a');
-    $('.refresher-previewfilter').append('<a class="dropdown-item refresher-previewfilter-category" category="전체">전체: 보이기</a>');
+    $('.refresher-previewfilter').append('<a class="dropdown-item refresher-previewfilter-category" category="전체">PREVIEW_CATEGORY</a>');
     category.each(function(index, item) {
         var data = $(item).text();
         data = data == "전체" ? "일반" : data;
-        $('.refresher-previewfilter').append('<a class="dropdown-item refresher-previewfilter-category" category="' + data + '">' + data + ': 보이기</a>');
+        $('.refresher-previewfilter').append(`<a class="dropdown-item refresher-previewfilter-category" category="${data}">PREVIEW_CATEGORY</a>`);
     });
     
-    $('.refresher-setting-reset').click(function() {
+    $('.refresher-setting-reset').click(() => {
         resetSetting();
         location.reload();
     });
-    $('.refresher-setting-userefresh').click(function() {
+    $('.refresher-setting-userefresh').click(() => {
         Setting.useRefresh = !Setting.useRefresh;
         if(Setting.useRefresh) {
-            $(this).text('게시물 자동 새로고침 사용');
+            $(this).text(USE_REFRESH_DISABLED);
             initRefresher();
         }
         else {
-            $(this).text('게시물 자동 새로고침 안함');
+            $(this).text(USE_REFRESH_ENABLED);
             stopRefresher();
         }
         saveSetting();
         return false;
     });
-    $('.refresher-setting-refreshtime').click(function() {
+    $('.refresher-setting-refreshtime').click(() => {
         switch(Setting.refreshTime) {
             case 3:
                 Setting.refreshTime = 5;
@@ -441,7 +479,7 @@ function initSettingView() {
                 Setting.refreshTime = 3;
                 break;
             }
-            $(this).text('새로고침 시간 간격: ' + Setting.refreshTime + '초');
+            $(this).text(REFESH_TIME_INFO + Setting.refreshTime);
             if(Setting.useRefresh) {
                 clearInterval(loader_loop);
             initLoader();
@@ -450,40 +488,50 @@ function initSettingView() {
         saveSetting();
         return false;
     });
-    $('.refresher-setting-hidenotice').click(function() {
+    $('.refresher-setting-hidenotice').click(() => {
         Setting.hideNotice = !Setting.hideNotice;
         if(Setting.hideNotice) {
-            $(this).text('채널 공지 숨기기');
+            $(this).text(HIDE_NOTICE_DISABLED);
             hideNotice();
         }
         else {
-            $(this).text('채널 공지 보이기');
+            $(this).text(HIDE_NOTICE_ENABLED);
             showNotice();
         }
         saveSetting();
         return false;
     });
-    $('.refresher-setting-hideavatar').click(function() {
+    $('.refresher-setting-hideavatar').click(() => {
         Setting.hideAvatar = !Setting.hideAvatar;
         if(Setting.hideAvatar) {
-            $('.refresher-setting-hideavatar').text('프로필 아바타 숨기기');
+            $(this).text(HIDE_AVATAR_DISABLED);
             hideAvatar();
         }
         else {
-            $('.refresher-setting-hideavatar').text('프로필 아바타 보이기');
+            $(this).text(HIDE_AVATAR_ENABLED);
             showAvatar();
         }
         saveSetting();
         return false;
     });
-    $('.refresher-setting-usepreviewfilter').click(function() {
+
+    $('.refresher-setting-setmyimage').click(() => {
+        var value = prompt(MY_IMAGE_PROMPT, Setting.myImage);
+        if(value !== null) {
+            Setting.myImage = value;
+            saveSetting();
+        }
+        return false;
+    });
+
+    $('.refresher-setting-usepreviewfilter').click(() => {
         Setting.usePreviewFilter = !Setting.usePreviewFilter;
         if(Setting.usePreviewFilter) {
-            $(this).text('미리보기 필터 사용 중...');
+            $(this).text(PREVIEW_FILTER_ENABLED);
             $('.refresher-previewfilter').show();
         }
         else {
-            $(this).text('미리보기 필터 사용 안함');
+            $(this).text(PREVIEW_FILTER_DISABLED);
             $('.refresher-previewfilter').hide();
         }
         applyPreview();
@@ -491,10 +539,10 @@ function initSettingView() {
         return false;
     });
     
-    $('.refresher-previewfilter-category').click(function() {
+    $('.refresher-previewfilter-category').click(() => {
         var category = $(this).attr('category');
         Setting.filteredCategory[category] = !Setting.filteredCategory[category];
-        $(this).text(category + (Setting.filteredCategory[category] ? ": 숨기기" : ": 보이기"));
+        $(this).text(category + (Setting.filteredCategory[category] ? `: ${HIDE}` : `: ${SHOW}`));
         applyPreview();
         saveSetting();
         return false;
@@ -505,20 +553,34 @@ async function init() {
     board = $('div.board-title > a').not('.subscribe-btn').attr('href').replace('/b/', '');
     list = $('.list-table');
 
+    var state;
+
+    if($('.write-head').length > 0) {
+        state = 'write';
+    }
+    else {
+        state = 'board';
+    }
+
     initSettingView();
     await loadSetting();
 
-    if(Setting.useRefresh)
-        initRefresher();
+    if(state == 'board') {
+        if(Setting.useRefresh)
+            initRefresher();
 
-    if(Setting.hideNotice)
-        hideNotice();
+        if(Setting.hideNotice)
+            hideNotice();
 
-    if(Setting.hideAvatar)
-        hideAvatar();
+        if(Setting.hideAvatar)
+            hideAvatar();
 
-    applyPreview();
-    applyReplyRefresh();
+        applyPreview();
+        applyReplyRefresh();
+    }
+    else if(state == 'write') {
+        applyMyImage();
+    }
 }
 
 init();
