@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @auther      LeKAKiD
-// @version     1.2.1
+// @version     1.2.2
 // @exclude     https://namu.live/b/*/write
 // @include     https://namu.live/b/*
 // @run-at      document-start
@@ -209,6 +209,9 @@ function isToday(datetime) {
 
 function refreshArticle(data) {
     var newlist = $(data).find('.list-table').find('a.vrow').not('.notice');
+    newlist.find('.vrow-preview > noscript').each(function(index, item) {
+        $(item).parent().html($(item).text());
+    });
     if(newlist.length == 0)
         return;
 
