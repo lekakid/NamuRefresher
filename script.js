@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.3.1
+// @version     1.3.2
 // @include     https://namu.live/b/*
 // @run-at      document-end
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
@@ -450,11 +450,11 @@ function initSettingView() {
         $('.refresher-previewfilter').append(`<a class="dropdown-item refresher-previewfilter-category" category="${data}">PREVIEW_CATEGORY</a>`);
     });
     
-    $('.refresher-setting-reset').click(() => {
+    $('.refresher-setting-reset').click(function() {
         resetSetting();
         location.reload();
     });
-    $('.refresher-setting-userefresh').click(() => {
+    $('.refresher-setting-userefresh').click(function() {
         Setting.useRefresh = !Setting.useRefresh;
         if(Setting.useRefresh) {
             $(this).text(USE_REFRESH_DISABLED);
@@ -467,7 +467,7 @@ function initSettingView() {
         saveSetting();
         return false;
     });
-    $('.refresher-setting-refreshtime').click(() => {
+    $('.refresher-setting-refreshtime').click(function() {
         switch(Setting.refreshTime) {
             case 3:
                 Setting.refreshTime = 5;
@@ -488,7 +488,7 @@ function initSettingView() {
         saveSetting();
         return false;
     });
-    $('.refresher-setting-hidenotice').click(() => {
+    $('.refresher-setting-hidenotice').click(function() {
         Setting.hideNotice = !Setting.hideNotice;
         if(Setting.hideNotice) {
             $(this).text(HIDE_NOTICE_DISABLED);
@@ -501,7 +501,7 @@ function initSettingView() {
         saveSetting();
         return false;
     });
-    $('.refresher-setting-hideavatar').click(() => {
+    $('.refresher-setting-hideavatar').click(function() {
         Setting.hideAvatar = !Setting.hideAvatar;
         if(Setting.hideAvatar) {
             $(this).text(HIDE_AVATAR_DISABLED);
@@ -515,7 +515,7 @@ function initSettingView() {
         return false;
     });
 
-    $('.refresher-setting-setmyimage').click(() => {
+    $('.refresher-setting-setmyimage').click(function() {
         var value = prompt(MY_IMAGE_PROMPT, Setting.myImage);
         if(value !== null) {
             Setting.myImage = value;
@@ -524,7 +524,7 @@ function initSettingView() {
         return false;
     });
 
-    $('.refresher-setting-usepreviewfilter').click(() => {
+    $('.refresher-setting-usepreviewfilter').click(function() {
         Setting.usePreviewFilter = !Setting.usePreviewFilter;
         if(Setting.usePreviewFilter) {
             $(this).text(PREVIEW_FILTER_ENABLED);
@@ -539,7 +539,7 @@ function initSettingView() {
         return false;
     });
     
-    $('.refresher-previewfilter-category').click(() => {
+    $('.refresher-previewfilter-category').click(function() {
         var category = $(this).attr('category');
         Setting.filteredCategory[category] = !Setting.filteredCategory[category];
         $(this).text(category + (Setting.filteredCategory[category] ? `: ${HIDE}` : `: ${SHOW}`));
