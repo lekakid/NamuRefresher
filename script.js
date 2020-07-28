@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.3.0
+// @version     1.3.1
 // @include     https://namu.live/b/*
 // @run-at      document-end
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
@@ -555,7 +555,10 @@ async function init() {
 
     var state;
 
-    if($('.write-head').length > 0) {
+    if(location.href.indexOf('/edit') > 0) {
+        state = 'edit';
+    }
+    else if(location.href.indexOf('/write') > 0) {
         state = 'write';
     }
     else {
