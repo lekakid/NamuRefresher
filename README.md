@@ -2,34 +2,35 @@
 
 개요
 ----
-GreaseMonkey 계통 기반으로 돌아가는 나무라이브용 스크립트입니다.
+Violentmonkey 확장프로그램 기반 [나무라이브](https://namu.live/) 유저 스크립트입니다.
 
 기능소개
 -------
 ![image](https://user-images.githubusercontent.com/1362809/88638857-02c22980-d0f7-11ea-952a-378d767d6e7d.png)
-* 일정 시간 간격으로 게시물 자동 새로고침
-* 채널 상단 공지사항 숨기기
-  * 있었는데요, 몰랐습니다.
-* 게시물 및 댓글 작성자 프로필 이미지 숨기기
-* 게시물 작성 시 자짤 자동 추가 (1.3.0)
-* 게시물 목록에서 마우스 오버 시 특정 카테고리 이미지 미리보기 숨기기
-* 댓글 창에 새로고침 버튼 추가
-* 스크립트 자동 업데이트
+* [x] 일정 시간 간격으로 게시물 자동 새로고침
+* [x] 상단 네비게이션 고정
+* [x] 채널 상단 공지사항 숨김
+  * 사이트 설정에 있었는데요, 몰랐습니다.
+* [x] 게시물 및 댓글 작성자 프로필 이미지 숨김
+* [x] 게시물 작성 시 자동으로 추가할 자짤 등록 (1.3.0)
+* [ ] 마우스 우클릭 메뉴 구현
+* [x] 마우스 오버 시 채널 별 특정 카테고리 이미지 미리보기 숨김
+* [x] 댓글 창에 새로고침 버튼 추가
 
 설치법
 ------
-사용하는 브라우저 환경에 맞게 확장 프로그램을 설치합니다.
-* 크롬 : [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=ko)
-* 파이어폭스 : [Greasemonkey](https://addons.mozilla.org/ko/firefox/addon/greasemonkey/)
+![image](https://user-images.githubusercontent.com/1362809/88759826-8d159680-d1a6-11ea-80cd-4bdbcd12a2c6.png)  
+브라우저 확장 프로그램인 Violentmonkey를 설치합니다.
+* [크롬](https://chrome.google.com/webstore/detail/violentmonkey/jinjaccalgkegednnccohejagnlnfdag)
+* [파이어폭스](https://addons.mozilla.org/ko/firefox/addon/violentmonkey/)
 
-![image](https://user-images.githubusercontent.com/1362809/88549390-351e4900-d05b-11ea-939f-73bb88d7fdb6.png)
-Tampermonkey 기준
 
-스크립트 추가 버튼을 누릅니다.
+![image](https://user-images.githubusercontent.com/1362809/88759864-a61e4780-d1a6-11ea-8a68-187483df4bea.png)  
+대시보드를 열고 +버튼을 누른 뒤 URL 설치를 고릅니다.  
+[배포 중인 스크립트](/../../raw/master/script.js)의 링크 주소를 복사하여 붙여 넣습니다.
 
-![image](https://user-images.githubusercontent.com/1362809/88549620-7dd60200-d05b-11ea-9824-656f7cdd8323.png)
-
-전체 내용을 삭제하고 [배포 중인 스크립트](script.js)를 붙여넣고 저장합니다. (파일 > 저장 혹은 Ctrl+S)
+![image](https://user-images.githubusercontent.com/1362809/88760008-07461b00-d1a7-11ea-9b6d-b7a039de339e.png)
+설치 창이 뜨면 설치 확인을 누르고 닫습니다.
 
 ![image](https://user-images.githubusercontent.com/1362809/88633544-1cac3e00-d0f0-11ea-9e99-4b4638ff2cfa.png)
 
