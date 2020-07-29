@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.5.06d
+// @version     1.5.07d
 // @include     https://namu.live/*
 // @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
@@ -313,6 +313,7 @@ function applyReplyRefreshBtn() {
                 observer.disconnect();
                 $(btn).insertAfter('.article-comment .title a').click(onClickReplyRefresh);
                 $(btn).appendTo('.article-comment .write-area .subtitle').click(onClickReplyRefresh);
+                break;
             }
         }
     });
