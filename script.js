@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.5.0
+// @version     1.5.0d01
 // @include     https://namu.live/*
 // @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
@@ -227,8 +227,8 @@ function refreshArticle(data) {
     if(newlist.length == 0)
         return;
 
-    var list_length = list.find('a.vrow').not('.notice').length;
-    var latest_num = list.find('a.vrow').not('.notice').first().find('span.col-id > span').text();
+    var list_length = article_list.find('a.vrow').not('.notice').length;
+    var latest_num = article_list.find('a.vrow').not('.notice').first().find('span.col-id > span').text();
 
     for(var i = 0; i < list_length; i++) {
         if(newlist.eq(i).find('span.col-id > span').text() > latest_num) {
@@ -236,13 +236,13 @@ function refreshArticle(data) {
         }
     }
 
-    list.find('a.vrow').not('.notice').remove();
-    list.append(newlist);
+    article_list.find('a.vrow').not('.notice').remove();
+    article_list.append(newlist);
 
-    list.find('a.new').css('animation', 'highlight ease-in-out 0.5s');
-    list.find('a.new').removeClass('new');
+    article_list.find('a.new').css('animation', 'highlight ease-in-out 0.5s');
+    article_list.find('a.new').removeClass('new');
 
-    list.children().each(function(index, item) {
+    article_list.children().each(function(index, item) {
         var datetime = $(item).find('time').attr('datetime');
 
         if(isToday(datetime))
@@ -305,11 +305,11 @@ function onClickReplyRefresh() {
 
 // #region Hide Notice
 function hideNotice() {
-    list.find('.notice').css('display', 'none');
+    article_list.find('.notice').css('display', 'none');
 }
 
 function showNotice() {
-    list.find('.notice').removeAttr('style');
+    article_list.find('.notice').removeAttr('style');
 }
 
 // #endregion
@@ -360,7 +360,7 @@ function applyMyImage() {
 
 // #region Preview Filter
 function applyPreviewFilter() {
-    list.children().each(function(index, item) {
+    article_list.children().each(function(index, item) {
         var tag = $(item).find('span.tag').text();
         tag = (tag == "") ? "일반" : tag;
 
@@ -404,7 +404,7 @@ async function loadSetting() {
     Setting.hideContentImage = await GM.getValue('Setting.hideContentImage', DefaultSetting.hideContentImage);
     Setting.myImage = await GM.getValue('Setting.myImage', DefaultSetting.myImage);
     Setting.usePreviewFilter = await GM.getValue('Setting.usePreviewFilter', DefaultSetting.usePreviewFilter);
-    Setting.filteredCategory = JSON.parse(await GM.getValue('Setting.filteredCategory.' + board, JSON.stringify(DefaultSetting.filteredCategory)));
+    Setting.filteredCategory = JSON.parse(await GM.getValue('Setting.filteredCategory.' + channel, JSON.stringify(DefaultSetting.filteredCategory)));
 }
 
 async function saveSetting() {
@@ -415,7 +415,7 @@ async function saveSetting() {
     await GM.setValue('Setting.hideContentImage', Setting.hideContentImage);
     await GM.setValue('Setting.myImage', Setting.myImage);
     await GM.setValue('Setting.usePreviewFilter', Setting.usePreviewFilter);
-    await GM.setValue('Setting.filteredCategory.' + board, JSON.stringify(Setting.filteredCategory));
+    await GM.setValue('Setting.filteredCategory.' + channel, JSON.stringify(Setting.filteredCategory));
 }
 
 function resetSetting() {
@@ -592,8 +592,8 @@ function attachSettingMenuListener() {
 
 // #endregion
 
-var list = null;
-var board = null;
+var article_list = null;
+var channel = null;
 async function init() {
     var custom_style = document.createElement('style');
     custom_style.type = 'text/css';
@@ -620,26 +620,26 @@ async function init() {
     if(state == 'not support')
         return;
 
-    board = $('div.board-title > a').not('.subscribe-btn').attr('href').replace('/b/', '');
-    list = $('.list-table');
-
     await loadSetting();
 
     addSettingMenu();
     attachSettingMenuListener();
 
     if(state == 'board') {
+        channel = $('div.board-title > a').not('.subscribe-btn').attr('href').replace('/b/', '');
+        article_list = $('.list-table');
+
         if(Setting.useRefresh)
             initRefresher();
+            
+        if(Setting.hideNotice)
+            hideNotice();
+            
+        if(Setting.hideAvatar)
+            hideAvatar();
 
         if(Setting.hideContentImage)
             hideContentImage();
-
-        if(Setting.hideNotice)
-            hideNotice();
-
-        if(Setting.hideAvatar)
-            hideAvatar();
 
         applyPreviewFilter();
         applyReplyRefreshBtn();
