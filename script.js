@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.5.1.01h
+// @version     1.5.1
 // @include     https://namu.live/*
 // @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
-// @downloadURL https://raw.githubusercontent.com/lekakid/NamuRefresher/mobile-test/script.js
+// @downloadURL https://raw.githubusercontent.com/lekakid/NamuRefresher/master/script.js
 // @homepageURL https://github.com/lekakid/NamuRefresher
 // @supportURL  https://github.com/lekakid/NamuRefresher/issues
 // @grant       GM.getValue
