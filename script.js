@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.5.0d02
+// @version     1.5.d03
 // @include     https://namu.live/*
 // @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
@@ -71,10 +71,19 @@ const CUSTOM_CSS = `
         margin-top: 42px;
     }
 `;
-const CONTENT_IMAGE_CSS = `
+const HIDE_CONTENT_IMAGE_CSS = `
     <style type="text/css">
         .article-body img {
             display: none;
+        }
+    </style>`;
+const HIDE_AVATAR_CSS = `
+    <style type="text/css">
+        .avatar {
+            display: none;
+        }
+        .input-wrapper > .input {
+            width: calc(100% - 4.5rem - .5rem);
         }
     </style>`;
 
@@ -321,20 +330,19 @@ function showNotice() {
 // #endregion
 
 // #region Hide Profile Avatar
+var hide_avatar_css = $(HIDE_AVATAR_CSS);
 function hideAvatar() {
-    $('.avatar').css('display', 'none');
-    $('.input-wrapper > .input').css('width', 'calc(100% - 4.5rem - .5rem)');
+    hide_avatar_css.appendTo($(document.head));
 }
 
 function showAvatar() {
-    $('.avatar').removeAttr('style');
-    $('.input-wrapper > .input').removeAttr('style');
+    hide_avatar_css.remove();
 }
 
 // #endregion
 
 // #region Hide Content Image
-var hide_content_image_css = $(CONTENT_IMAGE_CSS);
+var hide_content_image_css = $(HIDE_CONTENT_IMAGE_CSS);
 function hideContentImage() {
     hide_content_image_css.appendTo($(document.head));
 }
