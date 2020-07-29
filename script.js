@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.5.d04
+// @version     1.5.05d
 // @include     https://namu.live/*
 // @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
@@ -307,8 +307,15 @@ function refreshComment(data) {
 function applyReplyRefreshBtn() {
     var btn = '<span>　</span><a class="btn btn-success" href="#"><span class="icon ion-android-refresh"></span> 새로고침</a>';
 
-    $(btn).insertAfter('.article-comment .title a').click(onClickReplyRefresh);
-    $(btn).appendTo('.article-comment .write-area .subtitle').click(onClickReplyRefresh);
+    var observer = new MutationObserver((mutations) => {
+        for(m of mutations) {
+            if(m.target.className = 'article-comment') {
+                observer.disconnect();
+                $(btn).insertAfter('.article-comment .title a').click(onClickReplyRefresh);
+                $(btn).appendTo('.article-comment .write-area .subtitle').click(onClickReplyRefresh);
+            }
+        }
+    });
 }
 
 function onClickReplyRefresh() {
