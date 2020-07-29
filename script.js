@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.4.0
+// @version     1.4.1
 // @include     https://namu.live/*
 // @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
@@ -62,8 +62,8 @@ const CUSTOM_CSS = `
         width: 100%;
         z-index: 20;
     }
-    .content-wrapper {
-        padding-top: 42px;
+    .topbar-area {
+        margin-top: 42px;
     }
 `;
 
@@ -553,6 +553,8 @@ async function init() {
     var custom_style = document.createElement('style');
     custom_style.textContent = CUSTOM_CSS;
     document.head.append(custom_style);
+
+    $('.nav-item.hidden-md-up').remove();
 
     var state;
 
