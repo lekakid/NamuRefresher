@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.5.07d
+// @version     1.5.08d
 // @include     https://namu.live/*
 // @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
@@ -235,12 +235,13 @@ function initRefresher() {
 }
 
 function refreshArticle(data) {
-    var newlist = $(data).find('.list-table').find('a.vrow').not('.notice');
+    var newlist = $(data).find('.board-article-list .list-table, .included-article-list .list-table').find('a.vrow').not('.notice');
+    if(newlist.length == 0)
+        return;
+
     newlist.find('.vrow-preview > noscript').each(function(index, item) {
         $(item).parent().html($(item).text());
     });
-    if(newlist.length == 0)
-        return;
 
     var list_length = article_list.find('a.vrow').not('.notice').length;
     var latest_num = article_list.find('a.vrow').not('.notice').first().find('span.col-id > span').text();
@@ -266,7 +267,6 @@ function refreshArticle(data) {
 
     applyPreviewFilter();
 }
-
 // #endregion
 
 // #region Reply Refresh Button
@@ -654,7 +654,7 @@ async function init() {
 
     if(state == 'board') {
         channel = $('div.board-title > a').not('.subscribe-btn').attr('href').replace('/b/', '');
-        article_list = $('.list-table');
+        article_list = $('.board-article-list .list-table, .included-article-list .list-table');
 
         if(Setting.useRefresh)
             initRefresher();
