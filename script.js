@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.4.3
+// @version     1.5.0
 // @include     https://namu.live/*
-// @run-at      document-end
+// @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
-// @downloadURL https://raw.githubusercontent.com/lekakid/NamuRefresher/master/script.js
+// @downloadURL https://raw.githubusercontent.com/lekakid/NamuRefresher/Develop/script.js
 // @homepageURL https://github.com/lekakid/NamuRefresher
 // @supportURL  https://github.com/lekakid/NamuRefresher/issues
 // @grant       GM.getValue
@@ -80,37 +80,16 @@ const REFRESH_TIME_INFO = '새로고침 시간 간격';
 const REFRESH_TIME_UNIT = '초';
 const HIDE_NOTICE = '채널 공지 숨기기';
 const HIDE_AVATAR = '프로필 아바타 숨기기';
+const HIDE_CONTENT_IMAGE = '본문 이미지 숨기기';
 const SET_MY_IMAGE = '자짤 이미지 주소 등록';
 const MY_IMAGE_PROMPT = '자짤로 사용할 이미지 주소를 입력';
 const PREVIEW_FILTER = '짤 미리보기 숨기기';
 const USE = '사용';
 const UNUSE = '사용 안 함';
 
-// #region Utility
-function getDaystamp(datetime) {
-    var date;
-    if(datetime)
-        date = new Date(datetime);
-    else
-        date = new Date();
-
-    var year = date.getFullYear();
-    var month = date.getMonth() + 1;
-    var day = date.getDate();
-
-    if (("" + month).length == 1) {
-        month = "0" + month;
-    }
-    if (("" + day).length == 1) {
-        day = "0" + day;
-    }
-
-    return `${year}.${month}.${day}`;
-}
-
-function getTimestamp(datetime) {
+// #region Time Utility
+function getTimeString(datetime) {
     var date = new Date(datetime);
-    date.set
     var hh = date.getHours();
     var mm = date.getMinutes();
 
@@ -124,11 +103,40 @@ function getTimestamp(datetime) {
     return `${hh}:${mm}`;
 }
 
-function isToday(datetime) {
-    var today = getDaystamp();
-    var target = getDaystamp(datetime);
+function getFullDateString(datetime) {
+    var date = new Date(datetime);
 
-    if(today == target)
+    var year = date.getFullYear();
+    var month = date.getMonth() + 1;
+    var day = date.getDate();
+    var hh = date.getHours();
+    var mm = date.getMinutes();
+    var ss = date.getSeconds();
+
+    if (("" + month).length == 1) {
+        month = "0" + month;
+    }
+    if (("" + day).length == 1) {
+        day = "0" + day;
+    }
+    if (("" + hh).length == 1) {
+        hh = "0" + hh;
+    }
+    if (("" + mm).length == 1) {
+        mm = "0" + mm;
+    }
+    if (("" + ss).length == 1) {
+        ss = "0" + ss;
+    }
+
+    return `${year}-${month}-${day} ${hh}:${mm}:${ss}`;
+}
+
+function isToday(datetime) {
+    var today = new Date();
+    var target = new Date(datetime);
+
+    if(today.toLocaleDateString() == target.toLocaleDateString())
         return true;
 
     return false;
@@ -238,7 +246,7 @@ function refreshArticle(data) {
         var datetime = $(item).find('time').attr('datetime');
 
         if(isToday(datetime))
-            $(item).find('time').text(getTimestamp(datetime));
+            $(item).find('time').text(getTimeString(datetime));
     });
 
     applyPreviewFilter();
@@ -272,6 +280,10 @@ function tryRefreshComment() {
 function refreshComment(data) {
     $('.article-comment > .list-area').remove();
     $('.article-comment > .title').after($(data).find('.article-comment > .list-area'));
+
+    $('.article-comment time').each(function(index, item) {
+        $(item).text(getFullDateString($(item).attr('datetime')));
+    });
 
     if(Setting.hideAvatar)
         hideAvatar();
@@ -315,6 +327,16 @@ function showAvatar() {
 
 // #endregion
 
+// #region Hide Content Image
+function hideContentImage() {
+    $('.article-body img').hide();
+}
+
+function showContentImage() {
+    $('.article-body img').show();
+}
+// #endregion
+
 // #region Set My Posting Image
 function applyMyImage() {
     if(Setting.myImage == '')
@@ -331,8 +353,7 @@ function applyMyImage() {
     });
     observer.observe(document, {
         childList: true,
-        subtree: true,
-        attributes: false
+        subtree: true
     });
 }
 // #endregion
@@ -356,9 +377,6 @@ function applyPreviewFilter() {
 
 // #region Right Click Menu
 function addContextMenu() {
-    $.contextMenu({
-
-    })
 }
 // #endregion
 
@@ -368,6 +386,7 @@ var DefaultSetting = {
     refreshTime: 5,
     hideNotice: false,
     hideAvatar: true,
+    hideContentImage: false,
     myImage: '',
     usePreviewFilter: false,
     filteredCategory: {
@@ -382,6 +401,7 @@ async function loadSetting() {
     Setting.refreshTime = await GM.getValue('Setting.refreshTime', DefaultSetting.refreshTime);
     Setting.hideNotice = await GM.getValue('Setting.hideNotice', DefaultSetting.hideNotice);
     Setting.hideAvatar = await GM.getValue('Setting.hideAvatar', DefaultSetting.hideAvatar);
+    Setting.hideContentImage = await GM.getValue('Setting.hideContentImage', DefaultSetting.hideContentImage);
     Setting.myImage = await GM.getValue('Setting.myImage', DefaultSetting.myImage);
     Setting.usePreviewFilter = await GM.getValue('Setting.usePreviewFilter', DefaultSetting.usePreviewFilter);
     Setting.filteredCategory = JSON.parse(await GM.getValue('Setting.filteredCategory.' + board, JSON.stringify(DefaultSetting.filteredCategory)));
@@ -392,6 +412,7 @@ async function saveSetting() {
     await GM.setValue('Setting.refreshTime', Setting.refreshTime);
     await GM.setValue('Setting.hideNotice', Setting.hideNotice);
     await GM.setValue('Setting.hideAvatar', Setting.hideAvatar);
+    await GM.setValue('Setting.hideContentImage', Setting.hideContentImage);
     await GM.setValue('Setting.myImage', Setting.myImage);
     await GM.setValue('Setting.usePreviewFilter', Setting.usePreviewFilter);
     await GM.setValue('Setting.filteredCategory.' + board, JSON.stringify(Setting.filteredCategory));
@@ -422,6 +443,7 @@ function addSettingMenu() {
                     <div class="dropdown-divider"></div>
                     <div class="dropdown-item refresher-setting-hidenotice">${HIDE_NOTICE}</div>
                     <div class="dropdown-item refresher-setting-hideavatar">${HIDE_AVATAR}</div>
+                    <div class="dropdown-item refresher-setting-hidecontentimage">${HIDE_CONTENT_IMAGE}</div>
                     <div class="dropdown-item refresher-setting-setmyimage">${SET_MY_IMAGE}</div>
                     <div class="dropdown-divider"></div>
                     <div class="dropdown-item refresher-setting-usepreviewfilter">${PREVIEW_FILTER}</div>
@@ -442,6 +464,7 @@ function addSettingMenu() {
     $('.refresher-setting-refreshtime').text(`${REFRESH_TIME_INFO}: ${Setting.refreshTime}${REFRESH_TIME_UNIT}`);
     $('.refresher-setting-hidenotice').text(`${HIDE_NOTICE}: ${Setting.hideNotice ? USE : UNUSE}`);
     $('.refresher-setting-hideavatar').text(`${HIDE_AVATAR}: ${Setting.hideAvatar ? USE : UNUSE}`);
+    $('.refresher-setting-hidecontentimage').text(`${HIDE_CONTENT_IMAGE}: ${Setting.hideContentImage ? USE : UNUSE}`);
     $('.refresher-setting-usepreviewfilter').text(`${PREVIEW_FILTER}: ${Setting.usePreviewFilter ? USE : UNUSE}`);
 
     if(!Setting.usePreviewFilter) {
@@ -460,6 +483,7 @@ function attachSettingMenuListener() {
         resetSetting();
         location.reload();
     });
+
     $('.refresher-setting-userefresh').click(function() {
         Setting.useRefresh = !Setting.useRefresh;
         $(this).text(`${USE_REFRESH}: ${Setting.useRefresh ? USE : UNUSE}`);
@@ -472,6 +496,7 @@ function attachSettingMenuListener() {
         saveSetting();
         return false;
     });
+
     $('.refresher-setting-refreshtime').click(function() {
         switch(Setting.refreshTime) {
             case 3:
@@ -492,6 +517,7 @@ function attachSettingMenuListener() {
         saveSetting();
         return false;
     });
+
     $('.refresher-setting-hidenotice').click(function() {
         Setting.hideNotice = !Setting.hideNotice;
         $(this).text(`${HIDE_NOTICE}: ${Setting.hideNotice ? USE : UNUSE}`);
@@ -504,6 +530,7 @@ function attachSettingMenuListener() {
         saveSetting();
         return false;
     });
+
     $('.refresher-setting-hideavatar').click(function() {
         Setting.hideAvatar = !Setting.hideAvatar;
         $(this).text(`${HIDE_AVATAR}: ${Setting.hideAvatar ? USE : UNUSE}`);
@@ -512,6 +539,19 @@ function attachSettingMenuListener() {
         }
         else {
             showAvatar();
+        }
+        saveSetting();
+        return false;
+    });
+
+    $('.refresher-setting-hidecontentimage').click(function() {
+        Setting.hideContentImage = !Setting.hideContentImage;
+        $(this).text(`${HIDE_CONTENT_IMAGE}: ${Setting.hideContentImage ? USE : UNUSE}`);
+        if(Setting.hideContentImage) {
+            hideContentImage();
+        }
+        else {
+            showContentImage();
         }
         saveSetting();
         return false;
@@ -591,6 +631,9 @@ async function init() {
     if(state == 'board') {
         if(Setting.useRefresh)
             initRefresher();
+
+        if(Setting.hideContentImage)
+            hideContentImage();
 
         if(Setting.hideNotice)
             hideNotice();
