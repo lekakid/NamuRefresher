@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.5.0d01
+// @version     1.5.0d02
 // @include     https://namu.live/*
 // @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
@@ -71,6 +71,12 @@ const CUSTOM_CSS = `
         margin-top: 42px;
     }
 `;
+const CONTENT_IMAGE_CSS = `
+    <style type="text/css">
+        .article-body img {
+            display: none;
+        }
+    </style>`;
 
 const SETTNG_BUTTON_NAME = '스크립트 설정';
 const SCRIPT_NAME = '나무 리프레셔 (Namu Refresher)';
@@ -328,12 +334,13 @@ function showAvatar() {
 // #endregion
 
 // #region Hide Content Image
+var hide_content_image_css = $(CONTENT_IMAGE_CSS);
 function hideContentImage() {
-    $('.article-body img').hide();
+    hide_content_image_css.appendTo($(document.head));
 }
 
 function showContentImage() {
-    $('.article-body img').show();
+    hide_content_image_css.remove();
 }
 // #endregion
 
