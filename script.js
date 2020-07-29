@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.5.05d
+// @version     1.5.06d
 // @include     https://namu.live/*
 // @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
@@ -316,6 +316,10 @@ function applyReplyRefreshBtn() {
             }
         }
     });
+    observer.observe(document, {
+        childList: true,
+        subtree: true
+    })
 }
 
 function onClickReplyRefresh() {
