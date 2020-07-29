@@ -20,16 +20,15 @@ Violentmonkey 확장프로그램 기반 [나무라이브](https://namu.live/) �
 설치법
 ------
 ![image](https://user-images.githubusercontent.com/1362809/88759826-8d159680-d1a6-11ea-80cd-4bdbcd12a2c6.png)  
-브라우저 확장 프로그램인 Violentmonkey를 설치합니다.
-* [크롬](https://chrome.google.com/webstore/detail/violentmonkey/jinjaccalgkegednnccohejagnlnfdag)
-* [파이어폭스](https://addons.mozilla.org/ko/firefox/addon/violentmonkey/)
+브라우저 확장 프로그램인 Violentmonkey([Chrome](https://chrome.google.com/webstore/detail/violentmonkey/jinjaccalgkegednnccohejagnlnfdag), [Firefox](https://addons.mozilla.org/ko/firefox/addon/violentmonkey/))를 설치합니다.
+ > Android 운영체제는 [Kiwi Browser](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser)를 사용하면 크롬 확장기능을 사용할 수 있습니다.
 
 
 ![image](https://user-images.githubusercontent.com/1362809/88759864-a61e4780-d1a6-11ea-8a68-187483df4bea.png)  
 대시보드를 열고 +버튼을 누른 뒤 URL 설치를 고릅니다.  
 [배포 중인 스크립트](/../../raw/master/script.js)의 링크 주소를 복사하여 붙여 넣습니다.
 
-![image](https://user-images.githubusercontent.com/1362809/88760008-07461b00-d1a7-11ea-9b6d-b7a039de339e.png)
+![image](https://user-images.githubusercontent.com/1362809/88760008-07461b00-d1a7-11ea-9b6d-b7a039de339e.png)  
 설치 창이 뜨면 설치 확인을 누르고 닫습니다.
 
 ![image](https://user-images.githubusercontent.com/1362809/88633544-1cac3e00-d0f0-11ea-9e99-4b4638ff2cfa.png)
