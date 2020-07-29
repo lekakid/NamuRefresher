@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.4.2
+// @version     1.4.3
 // @include     https://namu.live/*
-// @run-at      document-start
+// @run-at      document-end
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
 // @downloadURL https://raw.githubusercontent.com/lekakid/NamuRefresher/master/script.js
 // @homepageURL https://github.com/lekakid/NamuRefresher
@@ -58,7 +58,7 @@ const CUSTOM_CSS = `
 
     .body .navbar-wrapper {
         top: 0px;
-        position: fixed;
+        position: fixed !important;
         width: 100%;
         z-index: 20;
     }
@@ -556,6 +556,7 @@ var list = null;
 var board = null;
 async function init() {
     var custom_style = document.createElement('style');
+    custom_style.type = 'text/css';
     custom_style.textContent = CUSTOM_CSS;
     document.head.append(custom_style);
 
