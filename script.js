@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.5.0
+// @version     1.5.1.01h
 // @include     https://namu.live/*
 // @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
-// @downloadURL https://raw.githubusercontent.com/lekakid/NamuRefresher/master/script.js
+// @downloadURL https://raw.githubusercontent.com/lekakid/NamuRefresher/mobile-test/script.js
 // @homepageURL https://github.com/lekakid/NamuRefresher
 // @supportURL  https://github.com/lekakid/NamuRefresher/issues
 // @grant       GM.getValue
@@ -83,7 +83,7 @@ const HIDE_AVATAR_CSS = `
             display: none !important;
         }
         .input-wrapper > .input {
-            width: calc(100% - 4.5rem - .5rem);
+            width: calc(100% - 4.5rem - .5rem) !important;
         }
     </style>`;
 
