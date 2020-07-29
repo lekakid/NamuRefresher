@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.4.3
+// @version     1.5.0
 // @include     https://namu.live/*
-// @run-at      document-end
+// @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
 // @downloadURL https://raw.githubusercontent.com/lekakid/NamuRefresher/master/script.js
 // @homepageURL https://github.com/lekakid/NamuRefresher
@@ -71,6 +71,21 @@ const CUSTOM_CSS = `
         margin-top: 42px;
     }
 `;
+const HIDE_CONTENT_IMAGE_CSS = `
+    <style type="text/css">
+        .article-body img {
+            display: none;
+        }
+    </style>`;
+const HIDE_AVATAR_CSS = `
+    <style type="text/css">
+        .avatar {
+            display: none !important;
+        }
+        .input-wrapper > .input {
+            width: calc(100% - 4.5rem - .5rem);
+        }
+    </style>`;
 
 const SETTNG_BUTTON_NAME = '스크립트 설정';
 const SCRIPT_NAME = '나무 리프레셔 (Namu Refresher)';
@@ -80,37 +95,16 @@ const REFRESH_TIME_INFO = '새로고침 시간 간격';
 const REFRESH_TIME_UNIT = '초';
 const HIDE_NOTICE = '채널 공지 숨기기';
 const HIDE_AVATAR = '프로필 아바타 숨기기';
+const HIDE_CONTENT_IMAGE = '본문 이미지 숨기기';
 const SET_MY_IMAGE = '자짤 이미지 주소 등록';
 const MY_IMAGE_PROMPT = '자짤로 사용할 이미지 주소를 입력';
 const PREVIEW_FILTER = '짤 미리보기 숨기기';
 const USE = '사용';
 const UNUSE = '사용 안 함';
 
-// #region Utility
-function getDaystamp(datetime) {
-    var date;
-    if(datetime)
-        date = new Date(datetime);
-    else
-        date = new Date();
-
-    var year = date.getFullYear();
-    var month = date.getMonth() + 1;
-    var day = date.getDate();
-
-    if (("" + month).length == 1) {
-        month = "0" + month;
-    }
-    if (("" + day).length == 1) {
-        day = "0" + day;
-    }
-
-    return `${year}.${month}.${day}`;
-}
-
-function getTimestamp(datetime) {
+// #region Time Utility
+function getTimeString(datetime) {
     var date = new Date(datetime);
-    date.set
     var hh = date.getHours();
     var mm = date.getMinutes();
 
@@ -124,11 +118,40 @@ function getTimestamp(datetime) {
     return `${hh}:${mm}`;
 }
 
-function isToday(datetime) {
-    var today = getDaystamp();
-    var target = getDaystamp(datetime);
+function getFullDateString(datetime) {
+    var date = new Date(datetime);
 
-    if(today == target)
+    var year = date.getFullYear();
+    var month = date.getMonth() + 1;
+    var day = date.getDate();
+    var hh = date.getHours();
+    var mm = date.getMinutes();
+    var ss = date.getSeconds();
+
+    if (("" + month).length == 1) {
+        month = "0" + month;
+    }
+    if (("" + day).length == 1) {
+        day = "0" + day;
+    }
+    if (("" + hh).length == 1) {
+        hh = "0" + hh;
+    }
+    if (("" + mm).length == 1) {
+        mm = "0" + mm;
+    }
+    if (("" + ss).length == 1) {
+        ss = "0" + ss;
+    }
+
+    return `${year}-${month}-${day} ${hh}:${mm}:${ss}`;
+}
+
+function isToday(datetime) {
+    var today = new Date();
+    var target = new Date(datetime);
+
+    if(today.toLocaleDateString() == target.toLocaleDateString())
         return true;
 
     return false;
@@ -212,15 +235,16 @@ function initRefresher() {
 }
 
 function refreshArticle(data) {
-    var newlist = $(data).find('.list-table').find('a.vrow').not('.notice');
-    newlist.find('.vrow-preview > noscript').each(function(index, item) {
-        $(item).parent().html($(item).text());
-    });
+    var newlist = $(data).find('.board-article-list .list-table, .included-article-list .list-table').find('a.vrow').not('.notice');
     if(newlist.length == 0)
         return;
 
-    var list_length = list.find('a.vrow').not('.notice').length;
-    var latest_num = list.find('a.vrow').not('.notice').first().find('span.col-id > span').text();
+    newlist.find('.vrow-preview > noscript').each(function(index, item) {
+        $(item).parent().html($(item).text());
+    });
+
+    var list_length = article_list.find('a.vrow').not('.notice').length;
+    var latest_num = article_list.find('a.vrow').not('.notice').first().find('span.col-id > span').text();
 
     for(var i = 0; i < list_length; i++) {
         if(newlist.eq(i).find('span.col-id > span').text() > latest_num) {
@@ -228,22 +252,21 @@ function refreshArticle(data) {
         }
     }
 
-    list.find('a.vrow').not('.notice').remove();
-    list.append(newlist);
+    article_list.find('a.vrow').not('.notice').remove();
+    article_list.append(newlist);
 
-    list.find('a.new').css('animation', 'highlight ease-in-out 0.5s');
-    list.find('a.new').removeClass('new');
+    article_list.find('a.new').css('animation', 'highlight ease-in-out 0.5s');
+    article_list.find('a.new').removeClass('new');
 
-    list.children().each(function(index, item) {
+    article_list.children().each(function(index, item) {
         var datetime = $(item).find('time').attr('datetime');
 
         if(isToday(datetime))
-            $(item).find('time').text(getTimestamp(datetime));
+            $(item).find('time').text(getTimeString(datetime));
     });
 
     applyPreviewFilter();
 }
-
 // #endregion
 
 // #region Reply Refresh Button
@@ -273,6 +296,10 @@ function refreshComment(data) {
     $('.article-comment > .list-area').remove();
     $('.article-comment > .title').after($(data).find('.article-comment > .list-area'));
 
+    $('.article-comment time').each(function(index, item) {
+        $(item).text(getFullDateString($(item).attr('datetime')));
+    });
+
     if(Setting.hideAvatar)
         hideAvatar();
 }
@@ -280,8 +307,20 @@ function refreshComment(data) {
 function applyReplyRefreshBtn() {
     var btn = '<span>　</span><a class="btn btn-success" href="#"><span class="icon ion-android-refresh"></span> 새로고침</a>';
 
-    $(btn).insertAfter('.article-comment .title a').click(onClickReplyRefresh);
-    $(btn).appendTo('.article-comment .write-area .subtitle').click(onClickReplyRefresh);
+    var observer = new MutationObserver((mutations) => {
+        for(m of mutations) {
+            if(m.target.className = 'article-comment') {
+                observer.disconnect();
+                $(btn).insertAfter('.article-comment .title a').click(onClickReplyRefresh);
+                $(btn).appendTo('.article-comment .write-area .subtitle').click(onClickReplyRefresh);
+                break;
+            }
+        }
+    });
+    observer.observe(document, {
+        childList: true,
+        subtree: true
+    })
 }
 
 function onClickReplyRefresh() {
@@ -293,26 +332,36 @@ function onClickReplyRefresh() {
 
 // #region Hide Notice
 function hideNotice() {
-    list.find('.notice').css('display', 'none');
+    article_list.find('.notice').css('display', 'none');
 }
 
 function showNotice() {
-    list.find('.notice').removeAttr('style');
+    article_list.find('.notice').removeAttr('style');
 }
 
 // #endregion
 
 // #region Hide Profile Avatar
+var hide_avatar_css = $(HIDE_AVATAR_CSS);
 function hideAvatar() {
-    $('.avatar').css('display', 'none');
-    $('.input-wrapper > .input').css('width', 'calc(100% - 4.5rem - .5rem)');
+    hide_avatar_css.appendTo($(document.head));
 }
 
 function showAvatar() {
-    $('.avatar').removeAttr('style');
-    $('.input-wrapper > .input').removeAttr('style');
+    hide_avatar_css.remove();
 }
 
+// #endregion
+
+// #region Hide Content Image
+var hide_content_image_css = $(HIDE_CONTENT_IMAGE_CSS);
+function hideContentImage() {
+    hide_content_image_css.appendTo($(document.head));
+}
+
+function showContentImage() {
+    hide_content_image_css.remove();
+}
 // #endregion
 
 // #region Set My Posting Image
@@ -331,15 +380,14 @@ function applyMyImage() {
     });
     observer.observe(document, {
         childList: true,
-        subtree: true,
-        attributes: false
+        subtree: true
     });
 }
 // #endregion
 
 // #region Preview Filter
 function applyPreviewFilter() {
-    list.children().each(function(index, item) {
+    article_list.children().each(function(index, item) {
         var tag = $(item).find('span.tag').text();
         tag = (tag == "") ? "일반" : tag;
 
@@ -356,9 +404,6 @@ function applyPreviewFilter() {
 
 // #region Right Click Menu
 function addContextMenu() {
-    $.contextMenu({
-
-    })
 }
 // #endregion
 
@@ -368,6 +413,7 @@ var DefaultSetting = {
     refreshTime: 5,
     hideNotice: false,
     hideAvatar: true,
+    hideContentImage: false,
     myImage: '',
     usePreviewFilter: false,
     filteredCategory: {
@@ -382,9 +428,10 @@ async function loadSetting() {
     Setting.refreshTime = await GM.getValue('Setting.refreshTime', DefaultSetting.refreshTime);
     Setting.hideNotice = await GM.getValue('Setting.hideNotice', DefaultSetting.hideNotice);
     Setting.hideAvatar = await GM.getValue('Setting.hideAvatar', DefaultSetting.hideAvatar);
+    Setting.hideContentImage = await GM.getValue('Setting.hideContentImage', DefaultSetting.hideContentImage);
     Setting.myImage = await GM.getValue('Setting.myImage', DefaultSetting.myImage);
     Setting.usePreviewFilter = await GM.getValue('Setting.usePreviewFilter', DefaultSetting.usePreviewFilter);
-    Setting.filteredCategory = JSON.parse(await GM.getValue('Setting.filteredCategory.' + board, JSON.stringify(DefaultSetting.filteredCategory)));
+    Setting.filteredCategory = JSON.parse(await GM.getValue('Setting.filteredCategory.' + channel, JSON.stringify(DefaultSetting.filteredCategory)));
 }
 
 async function saveSetting() {
@@ -392,9 +439,10 @@ async function saveSetting() {
     await GM.setValue('Setting.refreshTime', Setting.refreshTime);
     await GM.setValue('Setting.hideNotice', Setting.hideNotice);
     await GM.setValue('Setting.hideAvatar', Setting.hideAvatar);
+    await GM.setValue('Setting.hideContentImage', Setting.hideContentImage);
     await GM.setValue('Setting.myImage', Setting.myImage);
     await GM.setValue('Setting.usePreviewFilter', Setting.usePreviewFilter);
-    await GM.setValue('Setting.filteredCategory.' + board, JSON.stringify(Setting.filteredCategory));
+    await GM.setValue('Setting.filteredCategory.' + channel, JSON.stringify(Setting.filteredCategory));
 }
 
 function resetSetting() {
@@ -422,6 +470,7 @@ function addSettingMenu() {
                     <div class="dropdown-divider"></div>
                     <div class="dropdown-item refresher-setting-hidenotice">${HIDE_NOTICE}</div>
                     <div class="dropdown-item refresher-setting-hideavatar">${HIDE_AVATAR}</div>
+                    <div class="dropdown-item refresher-setting-hidecontentimage">${HIDE_CONTENT_IMAGE}</div>
                     <div class="dropdown-item refresher-setting-setmyimage">${SET_MY_IMAGE}</div>
                     <div class="dropdown-divider"></div>
                     <div class="dropdown-item refresher-setting-usepreviewfilter">${PREVIEW_FILTER}</div>
@@ -430,6 +479,7 @@ function addSettingMenu() {
 
     $(menubtn).appendTo(nav).append(menulist);
 
+    console.log(Setting);
     var category = $('.board-category a');
     $('.refresher-previewfilter').append('<a class="dropdown-item refresher-previewfilter-category" category="전체">PREVIEW_CATEGORY</a>');
     category.each(function(index, item) {
@@ -442,6 +492,7 @@ function addSettingMenu() {
     $('.refresher-setting-refreshtime').text(`${REFRESH_TIME_INFO}: ${Setting.refreshTime}${REFRESH_TIME_UNIT}`);
     $('.refresher-setting-hidenotice').text(`${HIDE_NOTICE}: ${Setting.hideNotice ? USE : UNUSE}`);
     $('.refresher-setting-hideavatar').text(`${HIDE_AVATAR}: ${Setting.hideAvatar ? USE : UNUSE}`);
+    $('.refresher-setting-hidecontentimage').text(`${HIDE_CONTENT_IMAGE}: ${Setting.hideContentImage ? USE : UNUSE}`);
     $('.refresher-setting-usepreviewfilter').text(`${PREVIEW_FILTER}: ${Setting.usePreviewFilter ? USE : UNUSE}`);
 
     if(!Setting.usePreviewFilter) {
@@ -451,6 +502,7 @@ function addSettingMenu() {
     $('a[category]').each(function(index, item) {
         var category = $(item).attr('category');
         var value = Setting.filteredCategory[category] || false;
+        console.log(`${category} : ${Setting.filteredCategory[category]} / ${value}`);
         $(item).text(`${$(item).attr('category')}: ${value ? USE : UNUSE}`);
     });
 }
@@ -460,6 +512,7 @@ function attachSettingMenuListener() {
         resetSetting();
         location.reload();
     });
+
     $('.refresher-setting-userefresh').click(function() {
         Setting.useRefresh = !Setting.useRefresh;
         $(this).text(`${USE_REFRESH}: ${Setting.useRefresh ? USE : UNUSE}`);
@@ -472,6 +525,7 @@ function attachSettingMenuListener() {
         saveSetting();
         return false;
     });
+
     $('.refresher-setting-refreshtime').click(function() {
         switch(Setting.refreshTime) {
             case 3:
@@ -492,6 +546,7 @@ function attachSettingMenuListener() {
         saveSetting();
         return false;
     });
+
     $('.refresher-setting-hidenotice').click(function() {
         Setting.hideNotice = !Setting.hideNotice;
         $(this).text(`${HIDE_NOTICE}: ${Setting.hideNotice ? USE : UNUSE}`);
@@ -504,6 +559,7 @@ function attachSettingMenuListener() {
         saveSetting();
         return false;
     });
+
     $('.refresher-setting-hideavatar').click(function() {
         Setting.hideAvatar = !Setting.hideAvatar;
         $(this).text(`${HIDE_AVATAR}: ${Setting.hideAvatar ? USE : UNUSE}`);
@@ -512,6 +568,19 @@ function attachSettingMenuListener() {
         }
         else {
             showAvatar();
+        }
+        saveSetting();
+        return false;
+    });
+
+    $('.refresher-setting-hidecontentimage').click(function() {
+        Setting.hideContentImage = !Setting.hideContentImage;
+        $(this).text(`${HIDE_CONTENT_IMAGE}: ${Setting.hideContentImage ? USE : UNUSE}`);
+        if(Setting.hideContentImage) {
+            hideContentImage();
+        }
+        else {
+            showContentImage();
         }
         saveSetting();
         return false;
@@ -542,7 +611,7 @@ function attachSettingMenuListener() {
     
     $('.refresher-previewfilter-category').click(function() {
         var category = $(this).attr('category');
-        Setting.filteredCategory[category] = !Setting.filteredCategory[category];
+        Setting.filteredCategory[category] = !(Setting.filteredCategory[category] || false);
         $(this).text(`${category}: ${Setting.filteredCategory[category] ? USE : UNUSE}` );
         applyPreviewFilter();
         saveSetting();
@@ -552,8 +621,8 @@ function attachSettingMenuListener() {
 
 // #endregion
 
-var list = null;
-var board = null;
+var article_list = null;
+var channel = null;
 async function init() {
     var custom_style = document.createElement('style');
     custom_style.type = 'text/css';
@@ -580,8 +649,8 @@ async function init() {
     if(state == 'not support')
         return;
 
-    board = $('div.board-title > a').not('.subscribe-btn').attr('href').replace('/b/', '');
-    list = $('.list-table');
+    channel = $('div.board-title > a').not('.subscribe-btn').attr('href').replace('/b/', '');
+    article_list = $('.board-article-list .list-table, .included-article-list .list-table');
 
     await loadSetting();
 
@@ -591,12 +660,15 @@ async function init() {
     if(state == 'board') {
         if(Setting.useRefresh)
             initRefresher();
-
+            
         if(Setting.hideNotice)
             hideNotice();
-
+            
         if(Setting.hideAvatar)
             hideAvatar();
+
+        if(Setting.hideContentImage)
+            hideContentImage();
 
         applyPreviewFilter();
         applyReplyRefreshBtn();
