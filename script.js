@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.4.1
+// @version     1.4.2
 // @include     https://namu.live/*
 // @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
@@ -62,7 +62,12 @@ const CUSTOM_CSS = `
         width: 100%;
         z-index: 20;
     }
-    .topbar-area {
+
+    .body .navbar-wrapper+.content-wrapper {
+        margin-top: 42px;
+    }
+
+    .body .navbar-wrapper+.topbar-area {
         margin-top: 42px;
     }
 `;
