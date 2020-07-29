@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.5.08d
+// @version     1.5.09d
 // @include     https://namu.live/*
 // @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
@@ -479,6 +479,7 @@ function addSettingMenu() {
 
     $(menubtn).appendTo(nav).append(menulist);
 
+    console.log(Setting);
     var category = $('.board-category a');
     $('.refresher-previewfilter').append('<a class="dropdown-item refresher-previewfilter-category" category="전체">PREVIEW_CATEGORY</a>');
     category.each(function(index, item) {
@@ -501,6 +502,7 @@ function addSettingMenu() {
     $('a[category]').each(function(index, item) {
         var category = $(item).attr('category');
         var value = Setting.filteredCategory[category] || false;
+        console.log(`${category} : ${Setting.filteredCategory[category]} / ${value}`);
         $(item).text(`${$(item).attr('category')}: ${value ? USE : UNUSE}`);
     });
 }
@@ -609,7 +611,7 @@ function attachSettingMenuListener() {
     
     $('.refresher-previewfilter-category').click(function() {
         var category = $(this).attr('category');
-        Setting.filteredCategory[category] = !Setting.filteredCategory[category];
+        Setting.filteredCategory[category] = !(Setting.filteredCategory[category] || false);
         $(this).text(`${category}: ${Setting.filteredCategory[category] ? USE : UNUSE}` );
         applyPreviewFilter();
         saveSetting();
@@ -647,15 +649,15 @@ async function init() {
     if(state == 'not support')
         return;
 
+    channel = $('div.board-title > a').not('.subscribe-btn').attr('href').replace('/b/', '');
+    article_list = $('.board-article-list .list-table, .included-article-list .list-table');
+
     await loadSetting();
 
     addSettingMenu();
     attachSettingMenuListener();
 
     if(state == 'board') {
-        channel = $('div.board-title > a').not('.subscribe-btn').attr('href').replace('/b/', '');
-        article_list = $('.board-article-list .list-table, .included-article-list .list-table');
-
         if(Setting.useRefresh)
             initRefresher();
             
