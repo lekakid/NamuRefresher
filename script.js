@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.5.d03
+// @version     1.5.d04
 // @include     https://namu.live/*
 // @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
@@ -80,7 +80,7 @@ const HIDE_CONTENT_IMAGE_CSS = `
 const HIDE_AVATAR_CSS = `
     <style type="text/css">
         .avatar {
-            display: none;
+            display: none !important;
         }
         .input-wrapper > .input {
             width: calc(100% - 4.5rem - .5rem);
