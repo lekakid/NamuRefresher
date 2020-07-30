@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.5.4
+// @version     1.5.5
 // @include     https://namu.live/*
 // @run-at      document-end
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
