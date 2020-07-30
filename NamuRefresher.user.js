@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.5.3
+// @version     1.5.4
 // @include     https://namu.live/*
 // @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
@@ -639,7 +639,7 @@ async function init() {
     if(state == 'not support')
         return;
 
-    channel = $('div.board-title > a').not('.subscribe-btn').attr('href').replace('/b/', '');
+    channel = location.href.substring(20, location.href.lastIndexOf('/'));
     article_list = $('.board-article-list .list-table, .included-article-list .list-table');
 
     await loadSetting();
