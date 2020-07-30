@@ -501,7 +501,6 @@ function addSettingMenu() {
     $('a[category]').each(function(index, item) {
         var category = $(item).attr('category');
         var value = Setting.filteredCategory[category] || false;
-        console.log(`${category} : ${Setting.filteredCategory[category]} / ${value}`);
         $(item).text(`${$(item).attr('category')}: ${value ? USE : UNUSE}`);
     });
 }
