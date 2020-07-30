@@ -2,7 +2,7 @@
 // @name        NamuRefresher
 // @author      LeKAKiD
 // @version     1.5.5
-// @include     https://namu.live/*
+// @include     https://minor.town/*
 // @run-at      document-end
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
 // @downloadURL https://raw.githubusercontent.com/lekakid/NamuRefresher/master/NamuRefresher.user.js
@@ -83,6 +83,43 @@ const HIDE_AVATAR_CSS = `
         }
     </style>
 `;
+const CONTEXT_MENU_CSS = `
+    <style type="text/css">
+        .image-context-wrapper {
+            position: absolute;
+            max-width: 300px;
+            padding: 1rem;
+            border: 1px solid #bbb;
+            background-color: #fff;
+            z-index: 20;
+        }
+
+        .image-context-wrapper .list-devider {
+            height: 1px;
+            margin: .5rem 0;
+            overflow: hidden;
+            background-color: #e5e5e5;
+        }
+
+        .image-context-wrapper .list-item {
+            display: block;
+            width: 100%;
+            padding: 3px 20px;
+            clear: both;
+            font-weight: 400;
+            color: #373a3c;
+            white-space: nowrap;
+            border: 0;
+        }
+
+        .image-context-wrapper .list-item:hover,
+        .image-context-wrapper .list-item:focus {
+            color: #2b2d2f;
+            background-color: #f5f5f5;
+            text-decoration: none;
+        }
+    </style>
+`;
 
 const SETTNG_BUTTON_NAME = '스크립트 설정';
 const SCRIPT_NAME = '나무 리프레셔 (Namu Refresher)';
@@ -93,7 +130,6 @@ const REFRESH_TIME_UNIT = '초';
 const HIDE_NOTICE = '채널 공지 숨기기';
 const HIDE_AVATAR = '프로필 아바타 숨기기';
 const HIDE_CONTENT_IMAGE = '본문 이미지 숨기기';
-const SET_MY_IMAGE = '자짤 이미지 주소 등록';
 const MY_IMAGE_PROMPT = '자짤로 사용할 이미지 주소를 입력';
 const PREVIEW_FILTER = '짤 미리보기 숨기기';
 const USE = '사용';
@@ -361,7 +397,7 @@ function applyMyImage() {
         for(m of mutations) {
             if(m.target.className == 'note-editable') {
                 observer.disconnect();
-                $('.note-editable').prepend(`<img src="${Setting.myImage}">`);
+                $('.note-editable').prepend(`${Setting.myImage}`);
                 break;
             }
         }
@@ -390,8 +426,77 @@ function applyPreviewFilter() {
 
 // #endregion
 
-// #region Right Click Menu
-function addContextMenu() {
+// #region Image Right Click Menu
+function applyImageMenu() {
+    $(CONTEXT_MENU_CSS).appendTo($(document.head));
+    var context_menu_image = $(`
+        <div class="image-context-wrapper" data-url="" data-html="">
+            <a href="#" class="list-item context-opentab" target="_blank">새 탭에서 원본 보기</a>
+            <a href="#" class="list-item context-copyurl">짤 주소 복사</a>
+            <a href="#" class="list-item context-applymyimage">자짤로 등록</a>
+            <div class="context-search-wrapper">
+                <div class="list-devider"></div>
+                <a href="" class="list-item context-search-google" target="_blank">구글 검색</a>
+                <a href="" class="list-item context-search-yandex" target="_blank">Yandex 검색</a>
+                <a href="" class="list-item context-search-iqdb" target="_blank">IQDB 검색</a>
+                <a href="#" class="list-item context-search-saucenao" target="_blank">SauceNao 검색</a>
+            </div>
+        </div>
+    `).appendTo('.root-container').hide();
+    context_menu_image.contextmenu(function() { return false; });
+
+    var context_close_event = function() {
+        if(context_menu_image.css('display') != 'none') {
+            context_menu_image.hide();
+            return true;
+        }
+        return false;
+    }
+
+    $(document).click(function() {
+        context_close_event();
+        return true;
+    });
+    
+    $('.article-body img, .article-body video').contextmenu(function(e) {
+        if(context_close_event())
+            return true;
+
+        context_menu_image.attr('data-url', e.target.src);
+        context_menu_image.attr('data-html', e.target.outerHTML);
+        context_menu_image.find('.context-opentab').attr('href', e.target.src + '?type=orig');
+        context_menu_image.find('.context-search-google').attr('href', `https://www.google.com/searchbyimage?safe=off&image_url=${e.target.src}`);
+        context_menu_image.find('.context-search-yandex').attr('href', `https://yandex.com/images/search?rpt=imageview&url=${e.target.src}`);
+        context_menu_image.find('.context-search-iqdb').attr('href', `https://iqdb.org/?url=${e.target.src}`);
+        context_menu_image.find('.context-search-saucenao').attr('href', `https://saucenao.com/search.php?db=999&dbmaski=32768&url=${e.target.src}`);
+
+        if(e.target.nodeName == 'IMG') {
+            $('.image-context-wrapper .context-search-wrapper').show();
+        }
+        else {
+            $('.image-context-wrapper .context-search-wrapper').hide();
+        }
+
+        context_menu_image.show();
+        context_menu_image.css('top', e.pageY + 3);
+        context_menu_image.css('left', e.pageX + 3);
+        return false;
+    });
+
+    $('.context-copyurl').click(function() {
+        var tmp = document.createElement('textarea');
+        $(document.body).append(tmp);
+        tmp.value = $('.image-context-wrapper').attr('data-url') + '?type=orig';
+        tmp.select();
+        document.execCommand('copy');
+        tmp.remove();
+    });
+
+    $('.context-applymyimage').click(function() {
+        Setting.myImage = $('.image-context-wrapper').attr('data-html');
+        saveSetting();
+        alert('자짤이 저장되었습니다. 다음 게시물 작성 시에 상단에 자동으로 짤이 추가됩니다.');
+    });
 }
 // #endregion
 
@@ -459,7 +564,6 @@ function addSettingMenu() {
                     <div class="dropdown-item refresher-setting-hidenotice">${HIDE_NOTICE}</div>
                     <div class="dropdown-item refresher-setting-hideavatar">${HIDE_AVATAR}</div>
                     <div class="dropdown-item refresher-setting-hidecontentimage">${HIDE_CONTENT_IMAGE}</div>
-                    <div class="dropdown-item refresher-setting-setmyimage">${SET_MY_IMAGE}</div>
                     <div class="dropdown-divider"></div>
                     <div class="dropdown-item refresher-setting-usepreviewfilter">${PREVIEW_FILTER}</div>
                     <div class="refresher-previewfilter"></div>
@@ -573,15 +677,6 @@ function attachSettingMenuListener() {
         return false;
     });
 
-    $('.refresher-setting-setmyimage').click(function() {
-        var value = prompt(MY_IMAGE_PROMPT, Setting.myImage);
-        if(value !== null) {
-            Setting.myImage = value;
-            saveSetting();
-        }
-        return false;
-    });
-
     $('.refresher-setting-usepreviewfilter').click(function() {
         Setting.usePreviewFilter = !Setting.usePreviewFilter;
         $(this).text(`${PREVIEW_FILTER}: ${Setting.usePreviewFilter ? USE : UNUSE}`);
@@ -656,6 +751,7 @@ async function init() {
 
         applyPreviewFilter();
         applyReplyRefreshBtn();
+        applyImageMenu();
     }
     else if(state == 'write') {
         applyMyImage();
