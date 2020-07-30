@@ -179,17 +179,6 @@ function getFullDateString(datetime) {
 
     return `${year}-${month}-${day} ${hh}:${mm}:${ss}`;
 }
-
-function isToday(datetime) {
-    var today = new Date();
-    var target = new Date(datetime);
-
-    if(today.toLocaleDateString() == target.toLocaleDateString())
-        return true;
-
-    return false;
-}
-
 // #endregion
 
 // #region Article Refresher
@@ -291,11 +280,14 @@ function refreshArticle(data) {
     article_list.find('a.new').css('animation', 'highlight ease-in-out 0.5s');
     article_list.find('a.new').removeClass('new');
 
-    article_list.children().each(function(index, item) {
-        var datetime = $(item).find('time').attr('datetime');
+    var criteria = new Date();
+    criteria = criteria.setHours(criteria.getHours() - 24);
 
-        if(isToday(datetime))
-            $(item).find('time').text(getTimeString(datetime));
+    article_list.children().each(function(index, item) {
+        var targettime = new Date($(item).find('time').attr('datetime'));
+
+        if(targettime > criteria)
+            $(item).find('time').text(getTimeString(targettime));
     });
 
     applyPreviewFilter();
