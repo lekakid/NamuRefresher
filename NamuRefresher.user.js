@@ -73,7 +73,7 @@ const CUSTOM_CSS = `
 `;
 const HIDE_CONTENT_IMAGE_CSS = `
     <style type="text/css">
-        .article-body img {
+        .article-body img, video {
             display: none;
         }
     </style>`;
