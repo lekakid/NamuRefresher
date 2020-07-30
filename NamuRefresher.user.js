@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.5.4
+// @version     1.5.5
 // @include     https://namu.live/*
-// @run-at      document-start
+// @run-at      document-end
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
 // @downloadURL https://raw.githubusercontent.com/lekakid/NamuRefresher/master/NamuRefresher.user.js
 // @homepageURL https://github.com/lekakid/NamuRefresher
@@ -13,70 +13,66 @@
 // ==/UserScript==
 
 const CUSTOM_CSS = `
-    @keyframes highlight{
-        0% {
-            background-color: rgba(240, 248, 255, 1);
-            opacity:1
+    <style type="text/css">
+        @keyframes highlight{
+            0% {
+                background-color: rgba(240, 248, 255, 1);
+                opacity:1
+            }
+            100% {
+                background-color: rgba(240, 248, 255, 0);
+                opacity:1
+            }
+        
         }
-        100% {
-            background-color: rgba(240, 248, 255, 0);
-            opacity:1
+        
+        @keyframes loaderspin {
+            0% { transform: rotate(0deg);
+                box-shadow: 0 0 15px #3d414d;
+            }
+            5% {
+                box-shadow: 0 0 -10px #3d414d;
+            }
+            15%{
+                box-shadow: 0 0 0px #3d414d;
+            }
+            100% { transform: rotate(360deg);
+                box-shadow: 0 0 0px #3d414d;
+            }
         }
-    
-    }
-    
-    @keyframes loaderspin {
-        0% { transform: rotate(0deg);
-            box-shadow: 0 0 15px #3d414d;
-        }
-        5% {
-            box-shadow: 0 0 -10px #3d414d;
-        }
-        15%{
-            box-shadow: 0 0 0px #3d414d;
-        }
-        100% { transform: rotate(360deg);
-            box-shadow: 0 0 0px #3d414d;
-        }
-    }
 
-    #article_loader {
-        border: 6px solid #d3d3d3;
-        border-top: 6px solid #3d414d;
-        border-radius: 50%;
-        position: fixed;
-        bottom: 30px;
-        left: 10px;
-        width: 40px;
-        height: 40px;
-        z-index: 20;
-    }
+        #article_loader {
+            border: 6px solid #d3d3d3;
+            border-top: 6px solid #3d414d;
+            border-radius: 50%;
+            position: fixed;
+            bottom: 30px;
+            left: 10px;
+            width: 40px;
+            height: 40px;
+            z-index: 20;
+        }
 
-    .preview-hide {
-        display:none;
-    }
+        .preview-hide {
+            display:none;
+        }
 
-    .body .navbar-wrapper {
-        top: 0px;
-        position: fixed !important;
-        width: 100%;
-        z-index: 20;
-    }
-
-    .body .navbar-wrapper+.content-wrapper {
-        margin-top: 42px;
-    }
-
-    .body .navbar-wrapper+.topbar-area {
-        margin-top: 42px;
-    }
+        .body .navbar-wrapper {
+            top: 0px;
+            position: fixed !important;
+            width: 100%;
+            z-index: 20;
+        }
+    </style>
 `;
+const HEADER_PADDING = `<div class="navbar-padding" style="width:100%; height:42px"></div>`;
 const HIDE_CONTENT_IMAGE_CSS = `
     <style type="text/css">
         .article-body img, video {
             display: none;
         }
-    </style>`;
+    </style>
+`;
 const HIDE_AVATAR_CSS = `
     <style type="text/css">
         .avatar {
@@ -85,7 +81,8 @@ const HIDE_AVATAR_CSS = `
         .input-wrapper > .input {
             width: calc(100% - 4.5rem - .5rem) !important;
         }
-    </style>`;
+    </style>
+`;
 
 const SETTNG_BUTTON_NAME = '스크립트 설정';
 const SCRIPT_NAME = '나무 리프레셔 (Namu Refresher)';
@@ -614,11 +611,8 @@ function attachSettingMenuListener() {
 var article_list = null;
 var channel = null;
 async function init() {
-    var custom_style = document.createElement('style');
-    custom_style.type = 'text/css';
-    custom_style.textContent = CUSTOM_CSS;
-    document.head.append(custom_style);
-
+    $(CUSTOM_CSS).appendTo($(document.head));
+    $('.navbar-wrapper').after(HEADER_PADDING)
     $('.nav-item.hidden-md-up').remove();
 
     var state;
