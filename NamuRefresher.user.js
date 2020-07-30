@@ -309,7 +309,7 @@ function applyReplyRefreshBtn() {
 
     var observer = new MutationObserver((mutations) => {
         for(m of mutations) {
-            if(m.target.className = 'article-comment') {
+            if(m.target.className == 'article-comment') {
                 observer.disconnect();
                 $(btn).insertAfter('.article-comment .title a').click(onClickReplyRefresh);
                 $(btn).appendTo('.article-comment .write-area .subtitle').click(onClickReplyRefresh);
