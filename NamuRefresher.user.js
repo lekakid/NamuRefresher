@@ -280,7 +280,7 @@ function refreshArticle(data) {
     var latest_num = article_list.find('a.vrow').not('.notice').first().find('span.col-id > span').text();
 
     for(var i = 0; i < list_length; i++) {
-        if(newlist.eq(i).find('span.col-id > span').text() > latest_num) {
+        if(parseInt(newlist.eq(i).find('span.col-id > span').text()) > parseInt(latest_num)) {
             newlist.eq(i).addClass('new');
         }
     }
