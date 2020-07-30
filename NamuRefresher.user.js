@@ -307,20 +307,11 @@ function refreshComment(data) {
 function applyReplyRefreshBtn() {
     var btn = '<span>　</span><a class="btn btn-success" href="#"><span class="icon ion-android-refresh"></span> 새로고침</a>';
 
-    var observer = new MutationObserver((mutations) => {
-        for(m of mutations) {
-            if(m.target.className == 'article-comment') {
-                observer.disconnect();
-                $(btn).insertAfter('.article-comment .title a').click(onClickReplyRefresh);
-                $(btn).appendTo('.article-comment .write-area .subtitle').click(onClickReplyRefresh);
-                break;
-            }
-        }
-    });
-    observer.observe(document, {
-        childList: true,
-        subtree: true
-    })
+    if($('.article-comment').length == 0)
+        return;
+
+    $(btn).insertAfter('.article-comment .title a').click(onClickReplyRefresh);
+    $(btn).appendTo('.article-comment .write-area .subtitle').click(onClickReplyRefresh);
 }
 
 function onClickReplyRefresh() {
