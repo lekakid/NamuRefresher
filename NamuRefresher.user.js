@@ -639,7 +639,7 @@ async function init() {
     if(state == 'not support')
         return;
 
-    channel = $('div.board-title > a').not('.subscribe-btn').attr('href').replace('/b/', '');
+    channel = location.href.substring(20, location.href.lastIndexOf('/'));
     article_list = $('.board-article-list .list-table, .included-article-list .list-table');
 
     await loadSetting();
