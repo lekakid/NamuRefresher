@@ -3,7 +3,7 @@
 // @author      LeKAKiD
 // @version     1.5.1
 // @include     https://namu.live/*
-// @run-at      document-end
+// @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
 // @downloadURL https://raw.githubusercontent.com/lekakid/NamuRefresher/master/NamuRefresher.user.js
 // @homepageURL https://github.com/lekakid/NamuRefresher
@@ -519,6 +519,7 @@ function attachSettingMenuListener() {
         }
         else {
             stopArticleRefresh();
+            removeLoader();
         }
         saveSetting();
         return false;
