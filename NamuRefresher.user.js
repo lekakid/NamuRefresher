@@ -3,7 +3,7 @@
 // @author      LeKAKiD
 // @version     1.6.1
 // @include     https://minor.town/*
-// @run-at      document-end
+// @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
 // @downloadURL https://raw.githubusercontent.com/lekakid/NamuRefresher/master/NamuRefresher.user.js
 // @homepageURL https://github.com/lekakid/NamuRefresher
@@ -11,139 +11,6 @@
 // @grant       GM.getValue
 // @grant       GM.setValue
 // ==/UserScript==
-
-const CUSTOM_CSS = `
-    <style type="text/css">
-        @keyframes highlight{
-            0% {
-                background-color: rgba(240, 248, 255, 1);
-                opacity:1
-            }
-            100% {
-                background-color: rgba(240, 248, 255, 0);
-                opacity:1
-            }
-        
-        }
-        
-        @keyframes loaderspin {
-            0% { transform: rotate(0deg);
-                box-shadow: 0 0 15px #3d414d;
-            }
-            5% {
-                box-shadow: 0 0 -10px #3d414d;
-            }
-            15%{
-                box-shadow: 0 0 0px #3d414d;
-            }
-            100% { transform: rotate(360deg);
-                box-shadow: 0 0 0px #3d414d;
-            }
-        }
-
-        #article_loader {
-            border: 6px solid #d3d3d3;
-            border-top: 6px solid #3d414d;
-            border-radius: 50%;
-            position: fixed;
-            bottom: 30px;
-            left: 10px;
-            width: 40px;
-            height: 40px;
-            z-index: 20;
-        }
-
-        .preview-hide {
-            display:none;
-        }
-
-        .body .navbar-wrapper {
-            top: 0px;
-            position: fixed !important;
-            width: 100%;
-            z-index: 20;
-        }
-    </style>
-`;
-const HEADER_PADDING = `<div class="navbar-padding" style="width:100%; height:42px"></div>`;
-const HIDE_CONTENT_IMAGE_CSS = `
-    <style type="text/css">
-        .article-body img, video {
-            display: none;
-        }
-    </style>
-`;
-const HIDE_AVATAR_CSS = `
-    <style type="text/css">
-        .avatar {
-            display: none !important;
-        }
-        .input-wrapper > .input {
-            width: calc(100% - 4.5rem - .5rem) !important;
-        }
-    </style>
-`;
-const CONTEXT_MENU_CSS = `
-    <style type="text/css">
-        .image-context-wrapper {
-            position: fixed;
-            display:flex;
-            justify-content: center;
-            align-items: center;
-            top: 0;
-            left: 0;
-            background-color: rgba(0, 0, 0, 0);
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-        }
-
-        .image-context-wrapper.mobile {
-            background-color: rgba(0, 0, 0, 0.5);
-            pointer-events: auto;
-        }
-
-        .image-context-menu {
-            position: absolute;
-            width: 300px;
-            padding: .5rem;
-            border: 1px solid #bbb;
-            background-color: #fff;
-            z-index: 20;
-            pointer-events: auto;
-        }
-
-        .image-context-wrapper.mobile .image-context-menu {
-            width: 80%;
-        }
-
-        .image-context-menu .list-devider {
-            height: 1px;
-            margin: .5rem 0;
-            overflow: hidden;
-            background-color: #e5e5e5;
-        }
-
-        .image-context-menu .list-item {
-            display: block;
-            width: 100%;
-            padding: 3px 20px;
-            clear: both;
-            font-weight: 400;
-            color: #373a3c;
-            white-space: nowrap;
-            border: 0;
-        }
-
-        .image-context-menu .list-item:hover,
-        .image-context-menu .list-item:focus {
-            color: #2b2d2f;
-            background-color: #f5f5f5;
-            text-decoration: none;
-        }
-    </style>
-`;
-
 const SETTNG_BUTTON_NAME = '스크립트 설정';
 const SCRIPT_NAME = '나무 리프레셔 (Namu Refresher)';
 const SETTING_RESET = '설정 초기화';
@@ -163,7 +30,7 @@ const SET_MY_IMAGE = '선택한 짤을 저장했습니다.\n다음에 게시물 
 const USE = '사용';
 const UNUSE = '사용 안 함';
 
-// #region Time Utility
+// #region Utility
 function getTimeString(datetime) {
     var date = new Date(datetime);
     var hh = date.getHours();
@@ -207,9 +74,60 @@ function getFullDateString(datetime) {
 
     return `${year}-${month}-${day} ${hh}:${mm}:${ss}`;
 }
+
+function addCSS(css) {
+    return $(`<style type="text/css">${css}</style>`).appendTo(document.head);
+}
 // #endregion
 
 // #region Article Refresher
+const LOADER_CSS = `
+    @keyframes highlight{
+        0% {
+            background-color: rgba(240, 248, 255, 1);
+            opacity:1
+        }
+        100% {
+            background-color: rgba(240, 248, 255, 0);
+            opacity:1
+        }
+    
+    }
+    
+    @keyframes loaderspin {
+        0% { transform: rotate(0deg);
+            box-shadow: 0 0 15px #3d414d;
+        }
+        5% {
+            box-shadow: 0 0 -10px #3d414d;
+        }
+        15%{
+            box-shadow: 0 0 0px #3d414d;
+        }
+        100% { transform: rotate(360deg);
+            box-shadow: 0 0 0px #3d414d;
+        }
+    }
+
+    #article_loader {
+        border: 6px solid #d3d3d3;
+        border-top: 6px solid #3d414d;
+        border-radius: 50%;
+        position: fixed;
+        bottom: 30px;
+        left: 10px;
+        width: 40px;
+        height: 40px;
+        z-index: 20;
+    }
+
+    .body .navbar-wrapper {
+        top: 0px;
+        position: fixed !important;
+        width: 100%;
+        z-index: 20;
+    }
+`;
 function initLoader() {
     removeLoader();
     $('.root-container').append('<div id="article_loader"></div>');
@@ -375,36 +293,67 @@ function onClickReplyRefresh() {
 // #endregion
 
 // #region Hide Notice
+const HIDE_NOTICE_CSS = `
+    .article-list .notice {
+        display: none !important;
+    }
+`
+var hide_notice_style = null;
 function hideNotice() {
-    article_list.find('.notice').css('display', 'none');
+    if(hide_notice_style == null)
+        hide_notice_style = addCSS(HIDE_NOTICE_CSS);
+    else
+        hide_notice_style.appendTo(document.head);
 }
 
 function showNotice() {
-    article_list.find('.notice').removeAttr('style');
+    if(hide_notice_style != null)
+        hide_notice_style.remove();
 }
 
 // #endregion
 
 // #region Hide Profile Avatar
-var hide_avatar_css = $(HIDE_AVATAR_CSS);
+const HIDE_AVATAR_CSS = `
+    .avatar {
+        display: none !important;
+    }
+    .input-wrapper > .input {
+        width: calc(100% - 4.5rem - .5rem) !important;
+    }
+`;
+var hide_avatar_style = null;
 function hideAvatar() {
-    hide_avatar_css.appendTo($(document.head));
+    if(hide_avatar_style == null)
+        hide_avatar_style = addCSS(HIDE_AVATAR_CSS);
+    else
+        hide_avatar_style.appendTo(document.head);
 }
 
 function showAvatar() {
-    hide_avatar_css.remove();
+    if(hide_avatar_style != null)
+        hide_avatar_style.remove();
 }
 
 // #endregion
 
-// #region Hide Content Image
-var hide_content_image_css = $(HIDE_CONTENT_IMAGE_CSS);
+// #region Hide Content 
+const HIDE_CONTENT_IMAGE_CSS = `
+    .article-body img, video {
+        display: none;
+    }
+`;
+var hide_content_image_css = null;
 function hideContentImage() {
-    hide_content_image_css.appendTo($(document.head));
+    if(hide_content_image_css == null)
+        hide_content_image_css = addCSS(HIDE_CONTENT_IMAGE_CSS);
+    else
+        hide_content_image_css.appendTo(document.head);
 }
 
 function showContentImage() {
-    hide_content_image_css.remove();
+    if(hide_content_image_css != null)
+        hide_content_image_css.remove();
 }
 // #endregion
 
@@ -430,7 +379,16 @@ function applyMyImage() {
 // #endregion
 
 // #region Preview Filter
+const HIDE_PREVIEW_CSS = `
+    .preview-hide {
+        display:none;
+    }
+`;
+var hide_preview_style = null;
 function applyPreviewFilter() {
+    if(hide_avatar_style == null)
+        hide_preview_style = addCSS(HIDE_PREVIEW_CSS);
+
     article_list.children().each(function(index, item) {
         var tag = $(item).find('span.tag').text();
         tag = (tag == "") ? "일반" : tag;
@@ -446,9 +404,89 @@ function applyPreviewFilter() {
 
 // #endregion
 
+// #region Fixed Header
+const HEADER_CSS = `
+    .body .root-container {
+        padding-top: 42px;
+    }
+    .body .navbar-wrapper {
+        top: 0px;
+        position: fixed !important;
+        width: 100%;
+        z-index: 20;
+    }
+`;
+function applyFixedHeader() {
+    addCSS(HEADER_CSS);
+    $(document).ready(function() {
+        $('.nav-item.hidden-md-up').remove();
+    });
+}
+// #endregion
+
 // #region Image Right Click Menu
+const CONTEXT_MENU_CSS = `
+    .image-context-wrapper {
+        position: fixed;
+        display:flex;
+        justify-content: center;
+        align-items: center;
+        top: 0;
+        left: 0;
+        background-color: rgba(0, 0, 0, 0);
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+    .image-context-wrapper.mobile {
+        background-color: rgba(0, 0, 0, 0.5);
+        pointer-events: auto;
+    }
+
+    .image-context-menu {
+        position: absolute;
+        width: 300px;
+        padding: .5rem;
+        border: 1px solid #bbb;
+        background-color: #fff;
+        z-index: 20;
+        pointer-events: auto;
+    }
+
+    .image-context-wrapper.mobile .image-context-menu {
+        width: 80%;
+    }
+
+    .image-context-menu .list-devider {
+        height: 1px;
+        margin: .5rem 0;
+        overflow: hidden;
+        background-color: #e5e5e5;
+    }
+
+    .image-context-menu .list-item {
+        display: block;
+        width: 100%;
+        padding: 3px 20px;
+        clear: both;
+        font-weight: 400;
+        color: #373a3c;
+        white-space: nowrap;
+        border: 0;
+    }
+
+    .image-context-menu .list-item:hover,
+    .image-context-menu .list-item:focus {
+        color: #2b2d2f;
+        background-color: #f5f5f5;
+        text-decoration: none;
+    }
+`;
+
 function applyImageMenu() {
-    $(CONTEXT_MENU_CSS).appendTo($(document.head));
+    addCSS(CONTEXT_MENU_CSS);
+
     var context_menu_image = $(`
         <div class="image-context-wrapper">
             <div class="image-context-menu" data-url="" data-html="">
@@ -748,9 +786,8 @@ function attachSettingMenuListener() {
 var article_list = null;
 var channel = null;
 async function init() {
-    $(CUSTOM_CSS).appendTo($(document.head));
-    $('.navbar-wrapper').after(HEADER_PADDING)
-    $('.nav-item.hidden-md-up').remove();
+    applyFixedHeader();
+    addCSS(LOADER_CSS);
 
     var state;
 
@@ -785,17 +822,25 @@ async function init() {
         case 'article':
             if(Setting.hideAvatar) hideAvatar();
             if(Setting.hideContentImage) hideContentImage();
-            applyReplyRefreshBtn();
-            applyImageMenu();
         case 'board':
-            if(Setting.useRefresh) initRefresher();
             if(Setting.hideNotice) hideNotice();
-            applyPreviewFilter();
             break;
         case 'write':
             applyMyImage();
             break;
     }
+
+    $(document).ready(function() {
+        switch(state) {
+            case 'article':
+                applyReplyRefreshBtn();
+                applyImageMenu();
+            case 'board':
+                if(Setting.useRefresh) initRefresher();
+                applyPreviewFilter();
+                break;
+        }
+    });
 }
 
 init();
