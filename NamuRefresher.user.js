@@ -415,12 +415,12 @@ const HEADER_CSS = `
         width: 100%;
         z-index: 20;
     }
+    .body .nav-item.hidden-md-up {
+        display: none !important;
+    }
 `;
 function applyFixedHeader() {
     addCSS(HEADER_CSS);
-    $(document).ready(function() {
-        $('.nav-item.hidden-md-up').remove();
-    });
 }
 // #endregion
 
