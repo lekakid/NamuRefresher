@@ -86,22 +86,45 @@ const HIDE_AVATAR_CSS = `
 const CONTEXT_MENU_CSS = `
     <style type="text/css">
         .image-context-wrapper {
+            position: fixed;
+            display:flex;
+            justify-content: center;
+            align-items: center;
+            top: 0;
+            left: 0;
+            background-color: rgba(0, 0, 0, 0);
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .image-context-wrapper.mobile {
+            background-color: rgba(0, 0, 0, 0.5);
+            pointer-events: auto;
+        }
+
+        .image-context-menu {
             position: absolute;
-            max-width: 300px;
-            padding: 1rem;
+            width: 300px;
+            padding: .5rem;
             border: 1px solid #bbb;
             background-color: #fff;
             z-index: 20;
+            pointer-events: auto;
         }
 
-        .image-context-wrapper .list-devider {
+        .image-context-wrapper.mobile .image-context-menu {
+            width: 80%;
+        }
+
+        .image-context-menu .list-devider {
             height: 1px;
             margin: .5rem 0;
             overflow: hidden;
             background-color: #e5e5e5;
         }
 
-        .image-context-wrapper .list-item {
+        .image-context-menu .list-item {
             display: block;
             width: 100%;
             padding: 3px 20px;
@@ -112,8 +135,8 @@ const CONTEXT_MENU_CSS = `
             border: 0;
         }
 
-        .image-context-wrapper .list-item:hover,
-        .image-context-wrapper .list-item:focus {
+        .image-context-menu .list-item:hover,
+        .image-context-menu .list-item:focus {
             color: #2b2d2f;
             background-color: #f5f5f5;
             text-decoration: none;
@@ -422,22 +445,28 @@ function applyPreviewFilter() {
 function applyImageMenu() {
     $(CONTEXT_MENU_CSS).appendTo($(document.head));
     var context_menu_image = $(`
-        <div class="image-context-wrapper" data-url="" data-html="">
-            <a href="#" class="list-item context-opentab" target="_blank">새 탭에서 원본 보기</a>
-            <a href="#" class="list-item context-copyurl">짤 주소 복사</a>
-            <a href="#" class="list-item context-applymyimage">자짤로 등록</a>
-            <div class="context-search-wrapper">
-                <div class="list-devider"></div>
-                <a href="" class="list-item context-search-google" target="_blank">구글 검색</a>
-                <a href="" class="list-item context-search-yandex" target="_blank">Yandex 검색</a>
-                <a href="" class="list-item context-search-iqdb" target="_blank">IQDB 검색</a>
-                <a href="#" class="list-item context-search-saucenao" target="_blank">SauceNao 검색</a>
+        <div class="image-context-wrapper">
+            <div class="image-context-menu" data-url="" data-html="">
+                <a href="" class="list-item context-opentab" target="_blank">새 탭에서 원본 보기</a>
+                <a href="#" onclick="return false;" class="list-item context-copyurl">짤 주소 복사</a>
+                <a href="#" onclick="return false;"  class="list-item context-applymyimage">자짤로 등록</a>
+                <div class="context-search-wrapper">
+                    <div class="list-devider"></div>
+                    <a href="" class="list-item context-search-google" target="_blank">구글 검색</a>
+                    <a href="" class="list-item context-search-yandex" target="_blank">Yandex 검색</a>
+                    <a href="" class="list-item context-search-iqdb" target="_blank">IQDB 검색</a>
+                    <a href="" class="list-item context-search-saucenao" target="_blank">SauceNao 검색</a>
+                </div>
             </div>
         </div>
     `).appendTo('.root-container').hide();
     context_menu_image.contextmenu(function() { return false; });
 
-    var context_close_event = function() {
+    if(window.outerWidth <= 768) {
+        context_menu_image.addClass('mobile');
+    }
+
+    function context_close_event() {
         if(context_menu_image.css('display') != 'none') {
             context_menu_image.hide();
             return true;
@@ -448,14 +477,18 @@ function applyImageMenu() {
     $(document).click(function() {
         context_close_event();
         return true;
+    }).contextmenu(function() {
+        context_close_event();
+        return true;
     });
+    document.addEventListener('scroll', context_close_event);
     
     $('.article-body img, .article-body video').contextmenu(function(e) {
         if(context_close_event())
             return true;
 
-        context_menu_image.attr('data-url', e.target.src);
-        context_menu_image.attr('data-html', e.target.outerHTML);
+        context_menu_image.find('.image-context-menu').attr('data-url', e.target.src);
+        context_menu_image.find('.image-context-menu').attr('data-html', e.target.outerHTML);
         context_menu_image.find('.context-opentab').attr('href', e.target.src + '?type=orig');
         context_menu_image.find('.context-search-google').attr('href', `https://www.google.com/searchbyimage?safe=off&image_url=${e.target.src}`);
         context_menu_image.find('.context-search-yandex').attr('href', `https://yandex.com/images/search?rpt=imageview&url=${e.target.src}`);
@@ -463,29 +496,31 @@ function applyImageMenu() {
         context_menu_image.find('.context-search-saucenao').attr('href', `https://saucenao.com/search.php?db=999&dbmaski=32768&url=${e.target.src}`);
 
         if(e.target.nodeName == 'IMG') {
-            $('.image-context-wrapper .context-search-wrapper').show();
+            $('.image-context-menu .context-search-wrapper').show();
         }
         else {
-            $('.image-context-wrapper .context-search-wrapper').hide();
+            $('.image-context-menu .context-search-wrapper').hide();
         }
 
-        context_menu_image.show();
-        context_menu_image.css('top', e.pageY + 3);
-        context_menu_image.css('left', e.pageX + 3);
+        if(!context_menu_image.hasClass('mobile')) {
+            context_menu_image.find('.image-context-menu').css('top', e.pageY + 3 - $(document).scrollTop());
+            context_menu_image.find('.image-context-menu').css('left', e.pageX + 3);
+        }
+        context_menu_image.fadeIn(200);
         return false;
     });
 
     $('.context-copyurl').click(function() {
         var tmp = document.createElement('textarea');
         $(document.body).append(tmp);
-        tmp.value = $('.image-context-wrapper').attr('data-url') + '?type=orig';
+        tmp.value = $('.image-context-menu').attr('data-url') + '?type=orig';
         tmp.select();
         document.execCommand('copy');
         tmp.remove();
     });
 
     $('.context-applymyimage').click(function() {
-        Setting.myImage = $('.image-context-wrapper').attr('data-html');
+        Setting.myImage = $('.image-context-menu').attr('data-html');
         saveSetting();
         alert('자짤이 저장되었습니다. 다음 게시물 작성 시에 상단에 자동으로 짤이 추가됩니다.');
     });
@@ -710,6 +745,9 @@ async function init() {
     else if(location.href.indexOf('/write') > 0) {
         state = 'write';
     }
+    else if(location.href.search(/\/[0-9]+\?/) > 0) {
+        state = 'article';
+    }
     else if(location.href.indexOf('/b/') > 0) {
         state = 'board';
     }
@@ -728,25 +766,20 @@ async function init() {
     addSettingMenu();
     attachSettingMenuListener();
 
-    if(state == 'board') {
-        if(Setting.useRefresh)
-            initRefresher();
-            
-        if(Setting.hideNotice)
-            hideNotice();
-            
-        if(Setting.hideAvatar)
-            hideAvatar();
-
-        if(Setting.hideContentImage)
-            hideContentImage();
-
-        applyPreviewFilter();
-        applyReplyRefreshBtn();
-        applyImageMenu();
-    }
-    else if(state == 'write') {
-        applyMyImage();
+    switch(state) {
+        case 'article':
+            if(Setting.hideAvatar) hideAvatar();
+            if(Setting.hideContentImage) hideContentImage();
+            applyReplyRefreshBtn();
+            applyImageMenu();
+        case 'board':
+            if(Setting.useRefresh) initRefresher();
+            if(Setting.hideNotice) hideNotice();
+            applyPreviewFilter();
+            break;
+        case 'write':
+            applyMyImage();
+            break;
     }
 }
 
