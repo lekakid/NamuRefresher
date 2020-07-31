@@ -153,8 +153,13 @@ const REFRESH_TIME_UNIT = '초';
 const HIDE_NOTICE = '채널 공지 숨기기';
 const HIDE_AVATAR = '프로필 아바타 숨기기';
 const HIDE_CONTENT_IMAGE = '본문 이미지 숨기기';
-const MY_IMAGE_PROMPT = '자짤로 사용할 이미지 주소를 입력';
+const REMOVE_MY_IMAGE = '등록한 자짤 삭제';
+const REMOVE_MY_IMAGE_CONFIRM = '등록한 자짤을 삭제하시겠습니까?';
+const REMOVE_MY_IMAGE_RESULT = '삭제되었습니다.';
 const PREVIEW_FILTER = '짤 미리보기 숨기기';
+
+const SET_MY_IMAGE = '선택한 짤을 저장했습니다.\n다음에 게시물 작성 시 게시물 상단에 자동으로 추가됩니다.';
+
 const USE = '사용';
 const UNUSE = '사용 안 함';
 
@@ -522,7 +527,7 @@ function applyImageMenu() {
     $('.context-applymyimage').click(function() {
         Setting.myImage = $('.image-context-menu').attr('data-html');
         saveSetting();
-        alert('자짤이 저장되었습니다. 다음 게시물 작성 시에 상단에 자동으로 짤이 추가됩니다.');
+        alert(SET_MY_IMAGE);
     });
 }
 // #endregion
@@ -591,6 +596,7 @@ function addSettingMenu() {
                     <div class="dropdown-item refresher-setting-hidenotice">${HIDE_NOTICE}</div>
                     <div class="dropdown-item refresher-setting-hideavatar">${HIDE_AVATAR}</div>
                     <div class="dropdown-item refresher-setting-hidecontentimage">${HIDE_CONTENT_IMAGE}</div>
+                    <div class="dropdown-item refresher-setting-removemyimage">${REMOVE_MY_IMAGE}</div>
                     <div class="dropdown-divider"></div>
                     <div class="dropdown-item refresher-setting-usepreviewfilter">${PREVIEW_FILTER}</div>
                     <div class="refresher-previewfilter"></div>
@@ -702,6 +708,15 @@ function attachSettingMenuListener() {
         }
         saveSetting();
         return false;
+    });
+
+    $('.refresher-setting-removemyimage').click(function() {
+        if(confirm(REMOVE_MY_IMAGE_CONFIRM)) {
+            alert(REMOVE_MY_IMAGE_RESULT);
+            Setting.myImage = "";
+            saveSetting();
+        }
+        return true;
     });
 
     $('.refresher-setting-usepreviewfilter').click(function() {
