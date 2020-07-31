@@ -22,7 +22,7 @@ Violentmonkey 확장프로그램 기반 [나무라이브](https://namu.live/) �
 ------
 ![image](https://user-images.githubusercontent.com/1362809/88759826-8d159680-d1a6-11ea-80cd-4bdbcd12a2c6.png)  
 브라우저 확장 프로그램인 Violentmonkey([Chrome](https://chrome.google.com/webstore/detail/violentmonkey/jinjaccalgkegednnccohejagnlnfdag), [Firefox](https://addons.mozilla.org/ko/firefox/addon/violentmonkey/))를 설치합니다.
- > Android 운영체제는 [Kiwi Browser](https://play.google.com/store/apps/details?id=com.kiwibrowser.browser)를 사용하면 크롬 확장기능을 사용할 수 있습니다.
+ > Android 운영체제는 [파이어폭스 브라우저](https://play.google.com/store/apps/details?id=org.mozilla.firefox&hl=ko)를 사용하면 동일한 부가기능을 사용할 수 있습니다.
 
 
 ![image](https://user-images.githubusercontent.com/1362809/88760008-07461b00-d1a7-11ea-9b6d-b7a039de339e.png)  
