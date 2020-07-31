@@ -2,7 +2,7 @@
 
 개요
 ----
-Violentmonkey 확장프로그램 기반 [나무라이브](https://namu.live/) 유저 스크립트입니다.
+Violentmonkey 확장프로그램 기반 [아카라이브](https://arca.live/) 유저 스크립트입니다.
 
 기능소개
 -------

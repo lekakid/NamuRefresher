@@ -2,7 +2,7 @@
 // @name        NamuRefresher
 // @author      LeKAKiD
 // @version     1.6.2
-// @include     https://minor.town/*
+// @include     https://arca.live/*
 // @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
 // @downloadURL https://raw.githubusercontent.com/lekakid/NamuRefresher/master/NamuRefresher.user.js
@@ -12,7 +12,7 @@
 // @grant       GM.setValue
 // ==/UserScript==
 const SETTNG_BUTTON_NAME = '스크립트 설정';
-const SCRIPT_NAME = '나무 리프레셔 (Namu Refresher)';
+const SCRIPT_NAME = '아카 리프레셔 (Arca Refresher)';
 const SETTING_RESET = '설정 초기화';
 const USE_REFRESH = '게시물 자동 새로고침';
 const REFRESH_TIME_INFO = '새로고침 시간 간격';
