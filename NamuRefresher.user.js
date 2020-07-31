@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.6.1
+// @version     1.6.2
 // @include     https://minor.town/*
 // @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
