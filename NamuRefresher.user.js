@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.6.3
+// @version     1.7.0
 // @include     https://arca.live/*
 // @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
@@ -375,6 +375,81 @@ function applyMyImage() {
         childList: true,
         subtree: true
     });
+}
+// #endregion
+
+// #region Clipboard Image Uploader
+function applyClipboardImgUploader() {
+    var observer = new MutationObserver((mutations) => {
+        for(m of mutations) {
+            if(m.target.className == 'note-editable') {
+                observer.disconnect();
+                $('.note-editable').on('paste', onPasteImage);
+                break;
+            }
+        }
+    });
+    observer.observe(document, {
+        childList: true,
+        subtree: true
+    });
+}
+
+function onPasteImage(event) {
+    var file = event.originalEvent.clipboardData.items[0];
+    if(file.size > 20 * 1024 * 1024) {
+        alert('업로드 용량 초과');
+        return;
+    }
+
+    if(file.kind == 'file' && file.type.indexOf('image/') > -1) {
+        var formData = new FormData;
+        formData.append('upload', file.getAsFile());
+        formData.append('token', document.getElementsByName('token')[0].value);
+
+        $("#progress").remove();
+        $('<div id="progress" style="width:100%;height:20px;background-color:#e2e2e2;position:relative"><div style="position:absolute;width:100%;text-align:center;font-weight:bold;color:#FFF">이미지 업로드 중...</div><div id="progressBar" style="background-color:#00b3a1;height:100%;width:0%;text-align:center;"></div></div>').insertBefore("#content");
+        var progress = $("#progress");
+        var progressBar = $("#progressBar");
+
+        $.ajax({
+            url: "/b/upload",
+            type: 'POST',
+            data: formData,
+            async: true,
+            success: function(data) {
+                var url = data.url;
+                var parentNode = document.createElement("div");
+                var node;
+                if(file.type.split('/')[1] === "mp4" || file.type.split('/')[1] === "mov" || file.type.split('/')[1] === "webm") {
+                    node = document.createElement('video');
+                    node.src = url;
+                    node.loop = true;
+                    node.autoplay = false;
+                    node.controls = true;
+                    node.setAttribute("playsinline", "playsinline");
+                }
+                else {
+                    node = document.createElement('img');
+                    node.src = url;
+                }
+
+                parentNode.appendChild(node);
+                parentNode.appendChild(document.createElement('p'));
+                $('.note-editable').append(parentNode);
+                progress.remove();
+            },
+            error: function(data) {
+                data = data.responseJSON;
+                alert(data.error.message);
+            },
+            cache: false,
+            contentType: false,
+            processData: false
+        });
+        return false;
+    }
+    return true;
 }
 // #endregion
 
@@ -818,6 +893,8 @@ async function init() {
         case 'board':
             if(Setting.hideNotice) hideNotice();
             break;
+        case 'edit':
+            applyClipboardImgUploader();
         case 'write':
             applyMyImage();
             break;
