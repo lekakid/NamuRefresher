@@ -893,9 +893,10 @@ async function init() {
         case 'board':
             if(Setting.hideNotice) hideNotice();
             break;
+        case 'edit':
+            applyClipboardImgUploader();
         case 'write':
             applyMyImage();
-            applyClipboardImgUploader();
             break;
     }
 
