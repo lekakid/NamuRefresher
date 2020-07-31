@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.6.3
+// @version     1.7.0
 // @include     https://arca.live/*
 // @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
