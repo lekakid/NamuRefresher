@@ -419,9 +419,6 @@ const HEADER_CSS = `
         display: none !important;
     }
 `;
-function applyFixedHeader() {
-    addCSS(HEADER_CSS);
-}
 // #endregion
 
 // #region Image Right Click Menu
@@ -786,9 +783,6 @@ function attachSettingMenuListener() {
 var article_list = null;
 var channel = null;
 async function init() {
-    applyFixedHeader();
-    addCSS(LOADER_CSS);
-
     var state;
 
     if(location.href.indexOf('/edit') > 0) {
@@ -810,13 +804,12 @@ async function init() {
     if(state == 'not support')
         return;
 
+    addCSS(HEADER_CSS);
+    addCSS(LOADER_CSS);
+
     channel = location.href.substring(20, location.href.lastIndexOf('/'));
-    article_list = $('.board-article-list .list-table, .included-article-list .list-table');
 
     await loadSetting();
-
-    addSettingMenu();
-    attachSettingMenuListener();
 
     switch(state) {
         case 'article':
@@ -831,6 +824,11 @@ async function init() {
     }
 
     $(document).ready(function() {
+        article_list = $('.board-article-list .list-table, .included-article-list .list-table');
+
+        addSettingMenu();
+        attachSettingMenuListener();
+
         switch(state) {
             case 'article':
                 applyReplyRefreshBtn();
