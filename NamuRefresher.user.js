@@ -745,7 +745,7 @@ async function init() {
     else if(location.href.indexOf('/write') > 0) {
         state = 'write';
     }
-    else if(location.href.search(/\/[0-9]+\?/) > 0) {
+    else if(location.href.search(/\/[0-9]+/) > 0) {
         state = 'article';
     }
     else if(location.href.indexOf('/b/') > 0) {
