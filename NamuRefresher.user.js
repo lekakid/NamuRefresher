@@ -486,7 +486,7 @@ function doUpload(files, count, total) {
 
             parentNode.appendChild(node);
             parentNode.appendChild(document.createElement('p'));
-            $('.note-editable').append(parentNode);
+            unsafeWindow.summernote.summernote('insertNode', parentNode);
             progressBar.width((++count / total) * 100 + "%");
             doUpload(files, count, total);
         },
