@@ -12,24 +12,6 @@
 // @grant       GM.getValue
 // @grant       GM.setValue
 // ==/UserScript==
-const SETTNG_BUTTON_NAME = '스크립트 설정';
-const SCRIPT_NAME = '아카 리프레셔 (Arca Refresher)';
-const SETTING_RESET = '설정 초기화';
-const USE_REFRESH = '게시물 자동 새로고침';
-const REFRESH_TIME_INFO = '새로고침 시간 간격';
-const REFRESH_TIME_UNIT = '초';
-const HIDE_NOTICE = '채널 공지 숨기기';
-const HIDE_AVATAR = '프로필 아바타 숨기기';
-const HIDE_CONTENT_IMAGE = '본문 이미지 숨기기';
-const REMOVE_MY_IMAGE = '등록한 자짤 삭제';
-const REMOVE_MY_IMAGE_CONFIRM = '등록한 자짤을 삭제하시겠습니까?';
-const REMOVE_MY_IMAGE_RESULT = '삭제되었습니다.';
-const PREVIEW_FILTER = '짤 미리보기 숨기기';
-
-const SET_MY_IMAGE = '선택한 짤을 저장했습니다.\n다음에 게시물 작성 시 게시물 상단에 자동으로 추가됩니다.';
-
-const USE = '사용';
-const UNUSE = '사용 안 함';
 
 // #region Utility
 function getTimeString(datetime) {
@@ -141,7 +123,7 @@ function setLoader() {
     if (loader) {
         loader.removeAttr('style');
         setTimeout(function() {
-            loader.css('animation', 'loaderspin ' + Setting.refreshTime + 's ease-in-out');
+            loader.css('animation', 'loaderspin ' + Setting.refreshTime.value + 's ease-in-out');
         }, 50);
     }
 }
@@ -153,7 +135,7 @@ function removeLoader() {
 var loader_loop = null;
 function startArticleRefresh() {
     initLoader();
-    loader_loop = setInterval(tryRefreshArticle, Setting.refreshTime * 1000);
+    loader_loop = setInterval(tryRefreshArticle, Setting.refreshTime.value * 1000);
 }
 
 function stopArticleRefresh() {
@@ -196,7 +178,7 @@ function initRefresher() {
         if (document.hidden) {
             stopArticleRefresh();
         } else {
-            if (loader_loop === null && Setting.useRefresh) {
+            if (loader_loop === null && Setting.refreshTime.value) {
                 $(document).ready(startArticleRefresh);
             }
         }
@@ -272,7 +254,7 @@ function refreshComment(data) {
         $(item).text(getFullDateString($(item).attr('datetime')));
     });
 
-    if(Setting.hideAvatar)
+    if(Setting.hideAvatar.value)
         hideAvatar();
 }
 
@@ -360,14 +342,15 @@ function showContentImage() {
 
 // #region Set My Posting Image
 function applyMyImage() {
-    if(Setting.myImage == '')
+    if(Setting.myImage.value == '')
         return;
 
     var observer = new MutationObserver((mutations) => {
         for(m of mutations) {
             if(m.target.className == 'note-editable') {
                 observer.disconnect();
-                $('.note-editable').prepend(`${Setting.myImage}`);
+                
+                unsafeWindow.summernote.summernote('insertNode', $(Setting.myImage.value)[0]);
                 break;
             }
         }
@@ -516,7 +499,7 @@ function applyPreviewFilter() {
         var tag = $(item).find('span.tag').text();
         tag = (tag == "") ? "일반" : tag;
 
-        if(Setting.usePreviewFilter && (Setting.filteredCategory['전체'] || Setting.filteredCategory[tag])) {
+        if(Setting.filteredCategory[channel]['전체'] || Setting.filteredCategory[channel][tag]) {
             $(item).find('.vrow-preview').css('display', 'none');
         }
         else {
@@ -603,7 +586,7 @@ const CONTEXT_MENU_CSS = `
         text-decoration: none;
     }
 `;
-
+const SET_MY_IMAGE = '선택한 짤을 저장했습니다.\n다음에 게시물 작성 시 게시물 상단에 자동으로 추가됩니다.';
 function applyImageMenu() {
     addCSS(CONTEXT_MENU_CSS);
 
@@ -683,7 +666,7 @@ function applyImageMenu() {
     });
 
     $('.context-applymyimage').click(function() {
-        Setting.myImage = $('.image-context-menu').attr('data-html');
+        Setting.myImage.value = $('.image-context-menu').attr('data-html');
         saveSetting();
         alert(SET_MY_IMAGE);
     });
@@ -691,222 +674,318 @@ function applyImageMenu() {
 // #endregion
 
 // #region Setting
-var DefaultSetting = {
-    useRefresh: true,
-    refreshTime: 5,
-    hideNotice: false,
-    hideAvatar: true,
-    hideContentImage: false,
-    myImage: '',
-    usePreviewFilter: false,
+const SETTNG_BUTTON_NAME = '스크립트 설정';
+const SETTING_HEADER = '아카 리프레셔 (Arca Refresher) 설정';
+const REMOVE_MY_IMAGE_CONFIRM = '등록한 자짤을 삭제하시겠습니까?';
+const REMOVE_MY_IMAGE_RESULT = '삭제되었습니다.';
+const SETTING_RESET_CONFIRM = '모든 설정이 초기화 됩니다. 계속하시겠습니까?';
+
+const USE = '사용';
+const UNUSE = '사용 안 함';
+
+var Setting = {
+    version: GM.info.script.version,
+    refreshTime: {
+        name: '게시물 자동 새로고침',
+        description: '일정 시간마다 자동으로 게시물 목록을 갱신합니다.',
+        default: 5,
+        value: 5,
+        range: [0, 3, 5, 10]
+    },
+    hideNotice: {
+        name: '공지사항 숨기기',
+        description: '상단 공지사항을 제거해줍니다.',
+        default: false,
+        value: false
+    },
+    hideAvatar: {
+        name: '프로필 아바타 숨기기',
+        description: '게시물 조회 시 이용자 옆 프로필 이미지를 제거합니다.',
+        default: true,
+        value: true
+    },
+    hideContentImage: {
+        name: '본문 이미지 숨기기',
+        description: '게시물 조회 시 본문 이미지를 숨깁니다.',
+        default: false,
+        value: false
+    },
+    myImage: {
+        name: '등록한 자짤 삭제',
+        description: '등록한 자짤을 삭제합니다.',
+        default: '',
+        value: ''
+    },
     filteredCategory: {
-        전체: false,
-        일반: false
+        name: '카테고리 미리보기 숨기기',
+        description: '체크한 카테고리의 미리보기를 표시하지 않습니다.',
+        default: {
+            '전체': false,
+            '일반': false
+        }
     }
 }
-var Setting = {};
 
 async function loadSetting() {
-    Setting.useRefresh = await GM.getValue('Setting.useRefresh', DefaultSetting.useRefresh);
-    Setting.refreshTime = await GM.getValue('Setting.refreshTime', DefaultSetting.refreshTime);
-    Setting.hideNotice = await GM.getValue('Setting.hideNotice', DefaultSetting.hideNotice);
-    Setting.hideAvatar = await GM.getValue('Setting.hideAvatar', DefaultSetting.hideAvatar);
-    Setting.hideContentImage = await GM.getValue('Setting.hideContentImage', DefaultSetting.hideContentImage);
-    Setting.myImage = await GM.getValue('Setting.myImage', DefaultSetting.myImage);
-    Setting.usePreviewFilter = await GM.getValue('Setting.usePreviewFilter', DefaultSetting.usePreviewFilter);
-    Setting.filteredCategory = JSON.parse(await GM.getValue('Setting.filteredCategory.' + channel, JSON.stringify(DefaultSetting.filteredCategory)));
+    var setting_str = await GM.getValue('Setting', '');
+    if(setting_str == '') {
+        Setting.filteredCategory[channel] = $.extend({}, Setting.filteredCategory.default);
+        return;
+    }
+
+    Setting = JSON.parse(setting_str);
+
+    if(Setting.filteredCategory[channel] == undefined) {
+        Setting.filteredCategory[channel] = $.extend({}, Setting.filteredCategory.default);
+        return;
+    }
 }
 
 async function saveSetting() {
-    await GM.setValue('Setting.useRefresh', Setting.useRefresh);
-    await GM.setValue('Setting.refreshTime', Setting.refreshTime);
-    await GM.setValue('Setting.hideNotice', Setting.hideNotice);
-    await GM.setValue('Setting.hideAvatar', Setting.hideAvatar);
-    await GM.setValue('Setting.hideContentImage', Setting.hideContentImage);
-    await GM.setValue('Setting.myImage', Setting.myImage);
-    await GM.setValue('Setting.usePreviewFilter', Setting.usePreviewFilter);
-    await GM.setValue('Setting.filteredCategory.' + channel, JSON.stringify(Setting.filteredCategory));
+    await GM.setValue('Setting', JSON.stringify(Setting));
 }
 
 function resetSetting() {
-    Setting = JSON.parse(JSON.stringify(DefaultSetting));
+    Setting.version = GM.info.script.version;
+    Setting.refreshTime.value = Setting.refreshTime.default;
+    Setting.hideNotice.value = Setting.hideNotice.default;
+    Setting.hideAvatar.value = Setting.hideAvatar.default;
+    Setting.hideContentImage.value = Setting.hideContentImage.default;
+    Setting.myImage.value = Setting.myImage.default;
+    Setting.filteredCategory[channel] = $.extend({}, Setting.filteredCategory.default);
     saveSetting();
-    loadSetting();
 }
 
-function addSettingMenu() {
-    $('.refresher-setting').remove();
+const SETTING_CSS = `
+    .script-setting-wrapper {
+        margin: 0 auto;
+        max-width: 1300px;
+        border: 1px solid #bbb;
+        background-color: #fff;
+        padding: 1rem;
+    }
 
+    .script-setting-wrapper select {
+        display: block;
+        width: 100%;
+        padding: .5rem .75rem;
+        color: #55595c;
+        background-color: #fff;
+        border: 1px solid #bbb;
+    }
+
+    .script-setting-wrapper input {
+        width: 0;
+    }
+
+    .script-setting-wrapper input+label {
+        border: 1px solid transparent;
+        border-radius: 100px;
+        padding: 0 10px;
+        cursor: pointer;
+    }
+
+    .script-setting-wrapper input:checked+label {
+        border-color: #3d414d;
+        color: #fff;
+        background: #3d414d;
+    }
+
+    .script-setting-wrapper input+label:hover {
+        border: 1px solid #3d414d;
+    }
+
+    .script-setting-wrapper .align-right {
+        text-align: right;
+    }
+`;
+function addNewSettingMenu() {
     var nav = $('ul.navbar-nav').first();
-    var menubtn = `<li class="nav-item dropdown">
-                    <a aria-expanded="false" class="nav-link dropdown-toggle" href="#" title="Refresher 설정" data-toggle="dropdown" aria-haspopup="true">
-                    <span class="hidden-sm-down">${SETTNG_BUTTON_NAME}</span>
-                    <span class="hidden-md-up"><span class="ion-gear-a"></span></span>
-                    </a>
-                </li>`;
-    var menulist = `<div class="dropdown-menu">
-                    <div class="dropdown-item">${SCRIPT_NAME}</div>
-                    <div class="dropdown-item refresher-setting-reset">${SETTING_RESET}</div>
-                    <div class="dropdown-divider"></div>
-                    <div class="dropdown-item refresher-setting-userefresh">${USE_REFRESH}</div>
-                    <div class="dropdown-item refresher-setting-refreshtime">${REFRESH_TIME_INFO}</div>
-                    <div class="dropdown-divider"></div>
-                    <div class="dropdown-item refresher-setting-hidenotice">${HIDE_NOTICE}</div>
-                    <div class="dropdown-item refresher-setting-hideavatar">${HIDE_AVATAR}</div>
-                    <div class="dropdown-item refresher-setting-hidecontentimage">${HIDE_CONTENT_IMAGE}</div>
-                    <div class="dropdown-item refresher-setting-removemyimage">${REMOVE_MY_IMAGE}</div>
-                    <div class="dropdown-divider"></div>
-                    <div class="dropdown-item refresher-setting-usepreviewfilter">${PREVIEW_FILTER}</div>
-                    <div class="refresher-previewfilter"></div>
-                </div>`;
+    var menubtn = `
+        <li class="nav-item dropdown">
+            <a aria-expanded="false" class="nav-link" href="#">
+            <span class="hidden-sm-down">${SETTNG_BUTTON_NAME}</span>
+            <span class="hidden-md-up"><span class="ion-gear-a"></span></span>
+            </a>
+        </li>`;
+    $(menubtn).appendTo(nav).click(function () {
+        if($('.script-setting-wrapper').css('display') != 'none')
+            return false;
 
-    $(menubtn).appendTo(nav).append(menulist);
+        applySettingView();
 
-    var category = $('.board-category a');
-    $('.refresher-previewfilter').append('<a class="dropdown-item refresher-previewfilter-category" category="전체">PREVIEW_CATEGORY</a>');
+        $('.content-wrapper').fadeOut(200, function() {
+            $('.script-setting-wrapper').fadeIn(200);
+        });
+        return false;
+    });
+
+    var menu_wrapper = `
+        <div class="script-setting-wrapper clearfix">
+            <div class="row">
+                <div class="col-sm-0 col-md-2"></div>
+                <div class="col-sm-12 col-md-8">
+                    <div class="dialog card">
+                        <div calss="card-block">
+                            <h4 class="card-title">${SETTING_HEADER}</h4>
+                            <div class="row">
+                                <label class="col-xs-3">${Setting.refreshTime.name}</label>
+                                <div class="col-xs-9">
+                                    <select id="useRefresh">
+                                        <option value="0">사용 안 함</option>
+                                        <option value="3">3초</option>
+                                        <option value="5">5초</option>
+                                        <option value="10">10초</option>
+                                    </select>
+                                    <p class="text-muted">${Setting.refreshTime.description}</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <label class="col-xs-3">${Setting.hideNotice.name}</label>
+                                <div class="col-xs-9">
+                                    <select id="hideNotice">
+                                        <option value="0">사용 안 함</option>
+                                        <option value="1">사용</option>
+                                    </select>
+                                    <p class="text-muted">${Setting.hideNotice.description}</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <label class="col-xs-3">${Setting.hideAvatar.name}</label>
+                                <div class="col-xs-9">
+                                    <select id="hideAvatar">
+                                        <option value="0">사용 안 함</option>
+                                        <option value="1">사용</option>
+                                    </select>
+                                    <p class="text-muted">${Setting.hideAvatar.description}</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <label class="col-xs-3">${Setting.hideContentImage.name}</label>
+                                <div class="col-xs-9">
+                                    <select id="hideContentImage">
+                                        <option value="0">사용 안 함</option>
+                                        <option value="1">사용</option>
+                                    </select>
+                                    <p class="text-muted">${Setting.hideContentImage.description}</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <label class="col-xs-3">${Setting.myImage.name}</label>
+                                <div class="col-xs-9">
+                                    <a href="#" id="removeMyImage" class="btn btn-success">삭제</a>
+                                    <p class="text-muted">${Setting.myImage.description}</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <label class="col-xs-3">${Setting.filteredCategory.name}</label>
+                                <div class="col-xs-9">
+                                    <div class="category-group"></div>
+                                    <p class="text-muted">${Setting.filteredCategory.description}</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    <a href="#" id="resetSetting" class="btn btn-danger">설정 초기화</a>
+                                </div>
+                                <div class="col-xs-6 align-right">
+                                    <a href="#" id="saveAndClose" class="btn btn-primary">저장</a>
+                                    <a href="#" id="closeSetting" class="btn btn-success">닫기</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    $(menu_wrapper).insertAfter('.content-wrapper').hide();
+
+    var category = $('.content-wrapper .board-category a');
+    var category_btn = `
+        <span>
+            <input type="checkbox" id="">
+            <label for=""></label>
+        </span>
+    `;
+    var general = $(category_btn);
+    general.find('input').attr('id', '전체');
+    general.find('label').attr('for', '전체');
+    general.find('label').text('전체');
+    general.appendTo('.category-group');
     category.each(function(index, item) {
         var data = $(item).text();
         data = data == "전체" ? "일반" : data;
-        $('.refresher-previewfilter').append(`<a class="dropdown-item refresher-previewfilter-category" category="${data}">PREVIEW_CATEGORY</a>`);
+        var btn = $(category_btn);
+        btn.find('input').attr('id', data);
+        btn.find('label').attr('for', data);
+        btn.find('label').text(data);
+        btn.appendTo('.category-group');
     });
 
-    $('.refresher-setting-userefresh').text(`${USE_REFRESH}: ${Setting.useRefresh ? USE : UNUSE}`);
-    $('.refresher-setting-refreshtime').text(`${REFRESH_TIME_INFO}: ${Setting.refreshTime}${REFRESH_TIME_UNIT}`);
-    $('.refresher-setting-hidenotice').text(`${HIDE_NOTICE}: ${Setting.hideNotice ? USE : UNUSE}`);
-    $('.refresher-setting-hideavatar').text(`${HIDE_AVATAR}: ${Setting.hideAvatar ? USE : UNUSE}`);
-    $('.refresher-setting-hidecontentimage').text(`${HIDE_CONTENT_IMAGE}: ${Setting.hideContentImage ? USE : UNUSE}`);
-    $('.refresher-setting-usepreviewfilter').text(`${PREVIEW_FILTER}: ${Setting.usePreviewFilter ? USE : UNUSE}`);
+    $('#removeMyImage').click(function() {
+        if(!confirm(REMOVE_MY_IMAGE_CONFIRM))
+            return false;
 
-    if(!Setting.usePreviewFilter) {
-        $('.refresher-previewfilter').hide();
-    }
-
-    $('a[category]').each(function(index, item) {
-        var category = $(item).attr('category');
-        var value = Setting.filteredCategory[category] || false;
-        $(item).text(`${$(item).attr('category')}: ${value ? USE : UNUSE}`);
+        Setting.myImage.value = '';
+        saveSetting;
+        alert(REMOVE_MY_IMAGE_RESULT);
     });
-}
 
-function attachSettingMenuListener() {
-    $('.refresher-setting-reset').click(function() {
+    $('#resetSetting').click(function() {
+        if(!confirm(SETTING_RESET_CONFIRM))
+            return false;
+
         resetSetting();
+        location.reload();
+        return false;
+    });
+
+    $('#saveAndClose').click(function() {
+        Setting.refreshTime.value = $('.script-setting-wrapper #useRefresh').val();
+        Setting.hideNotice.value = $('.script-setting-wrapper #hideNotice').val() == 1;
+        Setting.hideAvatar.value = $('.script-setting-wrapper #hideAvatar').val() == 1;
+        Setting.hideContentImage.value = $('.script-setting-wrapper #hideContentImage').val() == 1;
+
+        var category = $('.script-setting-wrapper .category-group input');
+        category.each(function(index, item) {
+            if(Setting.filteredCategory[channel] == undefined) {
+                Setting.filteredCategory[channel] = $.extend({}, Setting.filteredCategory.default);
+            }
+            Setting.filteredCategory[channel][item.id] = $(item).is(':checked');
+        });
+
+        saveSetting();
         location.reload();
     });
 
-    $('.refresher-setting-userefresh').click(function() {
-        Setting.useRefresh = !Setting.useRefresh;
-        $(this).text(`${USE_REFRESH}: ${Setting.useRefresh ? USE : UNUSE}`);
-        if(Setting.useRefresh) {
-            initRefresher();
-        }
-        else {
-            stopArticleRefresh();
-            removeLoader();
-        }
-        saveSetting();
-        return false;
-    });
-
-    $('.refresher-setting-refreshtime').click(function() {
-        switch(Setting.refreshTime) {
-            case 3:
-                Setting.refreshTime = 5;
-                break;
-            case 5:
-                Setting.refreshTime = 10;
-                break;
-            case 10:
-                Setting.refreshTime = 3;
-                break;
-        }
-        $(this).text(`${REFRESH_TIME_INFO}: ${Setting.refreshTime}${REFRESH_TIME_UNIT}`);
-        if(Setting.useRefresh) {
-            stopArticleRefresh();
-            startArticleRefresh();
-        }
-        saveSetting();
-        return false;
-    });
-
-    $('.refresher-setting-hidenotice').click(function() {
-        Setting.hideNotice = !Setting.hideNotice;
-        $(this).text(`${HIDE_NOTICE}: ${Setting.hideNotice ? USE : UNUSE}`);
-        if(Setting.hideNotice) {
-            hideNotice();
-        }
-        else {
-            showNotice();
-        }
-        saveSetting();
-        return false;
-    });
-
-    $('.refresher-setting-hideavatar').click(function() {
-        Setting.hideAvatar = !Setting.hideAvatar;
-        $(this).text(`${HIDE_AVATAR}: ${Setting.hideAvatar ? USE : UNUSE}`);
-        if(Setting.hideAvatar) {
-            hideAvatar();
-        }
-        else {
-            showAvatar();
-        }
-        saveSetting();
-        return false;
-    });
-
-    $('.refresher-setting-hidecontentimage').click(function() {
-        Setting.hideContentImage = !Setting.hideContentImage;
-        $(this).text(`${HIDE_CONTENT_IMAGE}: ${Setting.hideContentImage ? USE : UNUSE}`);
-        if(Setting.hideContentImage) {
-            hideContentImage();
-        }
-        else {
-            showContentImage();
-        }
-        saveSetting();
-        return false;
-    });
-
-    $('.refresher-setting-removemyimage').click(function() {
-        if(confirm(REMOVE_MY_IMAGE_CONFIRM)) {
-            alert(REMOVE_MY_IMAGE_RESULT);
-            Setting.myImage = "";
-            saveSetting();
-        }
-        return true;
-    });
-
-    $('.refresher-setting-usepreviewfilter').click(function() {
-        Setting.usePreviewFilter = !Setting.usePreviewFilter;
-        $(this).text(`${PREVIEW_FILTER}: ${Setting.usePreviewFilter ? USE : UNUSE}`);
-        if(Setting.usePreviewFilter) {
-            $('.refresher-previewfilter').show();
-        }
-        else {
-            $('.refresher-previewfilter').hide();
-        }
-        applyPreviewFilter();
-        saveSetting();
-        return false;
-    });
-    
-    $('.refresher-previewfilter-category').click(function() {
-        var category = $(this).attr('category');
-        Setting.filteredCategory[category] = !(Setting.filteredCategory[category] || false);
-        $(this).text(`${category}: ${Setting.filteredCategory[category] ? USE : UNUSE}` );
-        applyPreviewFilter();
-        saveSetting();
-        return false;
+    $('#closeSetting').click(function() {
+        $('.script-setting-wrapper').fadeOut(200, function() {
+            $('.content-wrapper').fadeIn(200);
+        });
     });
 }
 
+function applySettingView() {
+    $('.script-setting-wrapper #useRefresh').val(Setting.refreshTime.value);
+    $('.script-setting-wrapper #hideNotice').val(Setting.hideNotice.value ? 1 : 0);
+    $('.script-setting-wrapper #hideAvatar').val(Setting.hideAvatar.value ? 1 : 0);
+    $('.script-setting-wrapper #hideContentImage').val(Setting.hideContentImage.value ? 1 : 0);
+    
+    for(key in Setting.filteredCategory[channel]) {
+        if(Setting.filteredCategory[channel][key])
+            $(`.category-group input#${$.escapeSelector(key)}`).prop('checked', 'checked');
+    }
+}
 // #endregion
 
 var article_list = null;
 var channel = null;
 async function init() {
     addCSS(HEADER_CSS);
+    addCSS(SETTING_CSS);
+
+    addCSS(LOADER_CSS);
 
     var state;
     var pathname = location.pathname.split('/');
@@ -930,16 +1009,14 @@ async function init() {
         state = 'article';
     }
 
-    addCSS(LOADER_CSS);
-
     await loadSetting();
-
+    
     switch(state) {
         case 'article':
-            if(Setting.hideAvatar) hideAvatar();
-            if(Setting.hideContentImage) hideContentImage();
+            if(Setting.hideAvatar.value) hideAvatar();
+            if(Setting.hideContentImage.value) hideContentImage();
         case 'board':
-            if(Setting.hideNotice) hideNotice();
+            if(Setting.hideNotice.value) hideNotice();
             break;
         case 'write':
             applyMyImage();
@@ -951,15 +1028,14 @@ async function init() {
     $(document).ready(function() {
         article_list = $('.board-article-list .list-table, .included-article-list .list-table');
 
-        addSettingMenu();
-        attachSettingMenuListener();
+        addNewSettingMenu();
 
         switch(state) {
             case 'article':
                 applyReplyRefreshBtn();
                 applyImageMenu();
             case 'board':
-                if(Setting.useRefresh) initRefresher();
+                if(Setting.refreshTime.value > 0) initRefresher();
                 applyPreviewFilter();
                 break;
         }
