@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.7.2
+// @version     1.8.0
 // @include     https://arca.live/*
 // @include     https://*.arca.live/*
 // @run-at      document-start
@@ -379,13 +379,14 @@ function applyMyImage() {
 }
 // #endregion
 
-// #region Clipboard Image Uploader
-function applyClipboardImgUploader() {
+// #region Advanced Image Uploader
+function applyAdvancedImgUploader() {
     var observer = new MutationObserver((mutations) => {
         for(m of mutations) {
             if(m.target.className == 'note-editable') {
                 observer.disconnect();
                 $('.note-editable').on('paste', onPasteImage);
+                $('.note-dropzone').on('drop', onDropImage);
                 break;
             }
         }
@@ -396,61 +397,107 @@ function applyClipboardImgUploader() {
     });
 }
 
+function onDropImage(event) {
+    var files = event.originalEvent.dataTransfer.files;
+
+    if(files.length < 1)
+        return true;
+
+    files = Array.from(files);
+
+    files = files.reduce(function(acc, cur) {
+        if(cur.size > 20 * 1024 * 1024) {
+            alert(`20MB를 넘는 파일(${cur.name})입니다. 업로드에서 생략됩니다.`);
+            return acc;
+        } else if (['jpeg', 'jpg', 'png', 'gif', 'mp4', 'mov', 'webp', 'webm'].indexOf(cur.name.split('.').pop().toLowerCase()) === -1) {
+            alert("지원하지 않는 확장자명입니다. 업로드에서 생략됩니다.");
+            return acc;
+        }
+        acc.push(cur);
+        return acc;
+    }, []);
+
+    if(files.length > 0)
+        doUpload(files, 0, files.length);
+    return true;
+}
+
 function onPasteImage(event) {
-    var file = event.originalEvent.clipboardData.items[0];
-    if(file.size > 20 * 1024 * 1024) {
-        alert('업로드 용량 초과');
-        return;
+    var items = event.originalEvent.clipboardData.items;
+    var files = [];
+
+    for(i = 0; i < items.length; i++) {
+        if(items[i].kind == 'file' && items[i].type.indexOf('image/') > -1) {
+            var file = items[i].getAsFile();
+            if(file.size > 20 * 1024 * 1024) {
+                alert(`20MB를 넘는 파일(${cur.name})입니다. 업로드에서 생략됩니다.`);
+                break;
+            }
+            files.push(file);
+        }
     }
 
-    if(file.kind == 'file' && file.type.indexOf('image/') > -1) {
-        var formData = new FormData;
-        formData.append('upload', file.getAsFile());
-        formData.append('token', document.getElementsByName('token')[0].value);
+    if(files.length == 0)
+        return true;
 
-        $("#progress").remove();
-        $('<div id="progress" style="width:100%;height:20px;background-color:#e2e2e2;position:relative"><div style="position:absolute;width:100%;text-align:center;font-weight:bold;color:#FFF">이미지 업로드 중...</div><div id="progressBar" style="background-color:#00b3a1;height:100%;width:0%;text-align:center;"></div></div>').insertBefore("#content");
-        var progress = $("#progress");
-        var progressBar = $("#progressBar");
-
-        $.ajax({
-            url: "/b/upload",
-            type: 'POST',
-            data: formData,
-            async: true,
-            success: function(data) {
-                var url = data.url;
-                var parentNode = document.createElement("div");
-                var node;
-                if(file.type.split('/')[1] === "mp4" || file.type.split('/')[1] === "mov" || file.type.split('/')[1] === "webm") {
-                    node = document.createElement('video');
-                    node.src = url;
-                    node.loop = true;
-                    node.autoplay = false;
-                    node.controls = true;
-                    node.setAttribute("playsinline", "playsinline");
-                }
-                else {
-                    node = document.createElement('img');
-                    node.src = url;
-                }
-
-                parentNode.appendChild(node);
-                parentNode.appendChild(document.createElement('p'));
-                $('.note-editable').append(parentNode);
-                progress.remove();
-            },
-            error: function(data) {
-                data = data.responseJSON;
-                alert(data.error.message);
-            },
-            cache: false,
-            contentType: false,
-            processData: false
-        });
+    if(files.length > 0) {
+        doUpload(files, 0, files.length);
         return false;
     }
     return true;
+}
+
+function doUpload(files, count, total) {
+    if (count == total) {
+        $("#progress").remove();
+        return;
+    }
+
+    if(count == 0) {
+        $('<div id="progress" style="width:100%;height:20px;background-color:#e2e2e2;position:relative"><div style="position:absolute;width:100%;text-align:center;font-weight:bold;color:#FFF">이미지 업로드 중...</div><div id="progressBar" style="background-color:#00b3a1;height:100%;width:0%;text-align:center;"></div></div>').insertBefore("#content");
+    }
+    var progressBar = $("#progressBar");
+
+    var file = files[count];
+    var formData = new FormData;
+    formData.append('upload', file);
+    formData.append('token', document.getElementsByName("token")[0].value);
+    $.ajax({
+        url: "/b/upload",
+        type: 'POST',
+        data: formData,
+        async: true,
+        success: function(data) {
+            var url = data.url;
+            var parentNode = document.createElement("div");
+            var node;
+            if(file.type.split('/')[1] === "mp4" || file.type.split('/')[1] === "mov" || file.type.split('/')[1] === "webm") {
+                node = document.createElement('video');
+                node.src = url;
+                node.loop = true;
+                node.autoplay = false;
+                node.controls = true;
+                node.setAttribute("playsinline", "playsinline");
+            }
+            else {
+                node = document.createElement('img');
+                node.src = url;
+            }
+
+            parentNode.appendChild(node);
+            parentNode.appendChild(document.createElement('p'));
+            $('.note-editable').append(parentNode);
+            progressBar.width((++count / total) * 100 + "%");
+            doUpload(files, count, total);
+        },
+        error: function(data) {
+            data = data.responseJSON;
+            alert(data.error.message);
+        },
+        cache: false,
+        contentType: false,
+        processData: false
+    });
 }
 // #endregion
 
@@ -897,7 +944,7 @@ async function init() {
         case 'write':
             applyMyImage();
         case 'edit':
-            applyClipboardImgUploader();
+            applyAdvancedImgUploader();
             break;
     }
 
