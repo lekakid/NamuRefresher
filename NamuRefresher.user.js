@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.8.0
+// @version     1.8.1
 // @include     https://arca.live/*
 // @include     https://*.arca.live/*
 // @run-at      document-start
@@ -486,7 +486,7 @@ function doUpload(files, count, total) {
 
             parentNode.appendChild(node);
             parentNode.appendChild(document.createElement('p'));
-            $('.note-editable').append(parentNode);
+            unsafeWindow.summernote.summernote('insertNode', parentNode);
             progressBar.width((++count / total) * 100 + "%");
             doUpload(files, count, total);
         },
@@ -920,7 +920,7 @@ async function init() {
     if(pathname[3] == undefined || pathname[3] == '') {
         state = 'board';
     }
-    else if(pathname[3] == 'edit') {
+    else if(pathname[4] == 'edit') {
         state = 'edit';
     }
     else if(pathname[3] == 'write') {
