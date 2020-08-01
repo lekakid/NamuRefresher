@@ -103,13 +103,6 @@ const LOADER_CSS = `
         height: 40px;
         z-index: 20;
     }
-
-    .body .navbar-wrapper {
-        top: 0px;
-        position: fixed !important;
-        width: 100%;
-        z-index: 20;
-    }
 `;
 function initLoader() {
     removeLoader();
