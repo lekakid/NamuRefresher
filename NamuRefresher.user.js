@@ -733,6 +733,11 @@ async function loadSetting() {
     }
 
     Setting = JSON.parse(setting_str);
+
+    if(Setting.filteredCategory[channel] == undefined) {
+        Setting.filteredCategory[channel] = $.extend({}, Setting.filteredCategory.default);
+        return;
+    }
 }
 
 async function saveSetting() {
