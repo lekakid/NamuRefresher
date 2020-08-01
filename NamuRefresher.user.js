@@ -492,7 +492,7 @@ const HIDE_PREVIEW_CSS = `
 `;
 var hide_preview_style = null;
 function applyPreviewFilter() {
-    if(hide_avatar_style == null)
+    if(hide_preview_style == null)
         hide_preview_style = addCSS(HIDE_PREVIEW_CSS);
 
     article_list.children().each(function(index, item) {
