@@ -3,6 +3,7 @@
 // @author      LeKAKiD
 // @version     1.7.1
 // @include     https://arca.live/*
+// @include     https://*.arca.live/*
 // @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
 // @downloadURL https://raw.githubusercontent.com/lekakid/NamuRefresher/master/NamuRefresher.user.js
@@ -858,31 +859,31 @@ function attachSettingMenuListener() {
 var article_list = null;
 var channel = null;
 async function init() {
-    var state;
+    addCSS(HEADER_CSS);
 
-    if(location.href.indexOf('/edit') > 0) {
-        state = 'edit';
+    var state;
+    var pathname = location.pathname.split('/');
+
+    if(pathname[1] != 'b') {
+        return;
     }
-    else if(location.href.indexOf('/write') > 0) {
-        state = 'write';
-    }
-    else if(location.href.search(/\/[0-9]+/) > 0) {
-        state = 'article';
-    }
-    else if(location.href.indexOf('/b/') > 0) {
+
+    channel = pathname[2];
+
+    if(pathname[3] == undefined || pathname[3] == '') {
         state = 'board';
     }
-    else {
-        state = 'not support';
+    else if(pathname[3] == 'edit') {
+        state = 'edit';
+    }
+    else if(pathname[3] == 'write') {
+        state = 'write';
+    }
+    else if(/[0-9]+/.test(pathname[3])) {
+        state = 'article';
     }
 
-    if(state == 'not support')
-        return;
-
-    addCSS(HEADER_CSS);
     addCSS(LOADER_CSS);
-
-    channel = location.href.substring(20, location.href.lastIndexOf('/'));
 
     await loadSetting();
 
