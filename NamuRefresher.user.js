@@ -794,6 +794,10 @@ const SETTING_CSS = `
     .script-setting-wrapper input+label:hover {
         border: 1px solid #3d414d;
     }
+
+    .script-setting-wrapper .align-right {
+        text-align: right;
+    }
 `;
 function addNewSettingMenu() {
     var nav = $('ul.navbar-nav').first();
@@ -880,10 +884,14 @@ function addNewSettingMenu() {
                                     <p class="text-muted">${Setting.filteredCategory.description}</p>
                                 </div>
                             </div>
-                            <div class="btns">
-                                <a href="#" id="resetSetting" class="btn btn-danger">설정 초기화</a>
-                                <a href="#" id="saveAndClose" class="btn btn-primary">저장하고 닫기</a>
-                                <a href="#" id="closeSetting" class="btn btn-success">저장하지 않고 닫기</a>
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    <a href="#" id="resetSetting" class="btn btn-danger">설정 초기화</a>
+                                </div>
+                                <div class="col-xs-6 align-right">
+                                    <a href="#" id="saveAndClose" class="btn btn-primary">저장</a>
+                                    <a href="#" id="closeSetting" class="btn btn-success">닫기</a>
+                                </div>
                             </div>
                         </div>
                     </div>
