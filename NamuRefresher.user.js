@@ -684,6 +684,7 @@ const USE = '사용';
 const UNUSE = '사용 안 함';
 
 var Setting = {
+    version: GM.info.script.version,
     refreshTime: {
         name: '게시물 자동 새로고침',
         description: '일정 시간마다 자동으로 게시물 목록을 갱신합니다.',
@@ -745,6 +746,7 @@ async function saveSetting() {
 }
 
 function resetSetting() {
+    Setting.version = GM.info.script.version;
     Setting.refreshTime.value = Setting.refreshTime.default;
     Setting.hideNotice.value = Setting.hideNotice.default;
     Setting.hideAvatar.value = Setting.hideAvatar.default;
