@@ -920,7 +920,7 @@ async function init() {
     if(pathname[3] == undefined || pathname[3] == '') {
         state = 'board';
     }
-    else if(pathname[3] == 'edit') {
+    else if(pathname[4] == 'edit') {
         state = 'edit';
     }
     else if(pathname[3] == 'write') {
