@@ -810,8 +810,9 @@ function addNewSettingMenu() {
 
         applySettingView();
 
-        $('.content-wrapper').fadeOut(200);
-        $('.script-setting-wrapper').fadeIn(200);
+        $('.content-wrapper').fadeOut(200, function() {
+            $('.script-setting-wrapper').fadeIn(200);
+        });
         return false;
     });
 
@@ -882,6 +883,7 @@ function addNewSettingMenu() {
                             <div class="btns">
                                 <a href="#" id="resetSetting" class="btn btn-danger">설정 초기화</a>
                                 <a href="#" id="saveAndClose" class="btn btn-primary">저장하고 닫기</a>
+                                <a href="#" id="closeSetting" class="btn btn-success">저장하지 않고 닫기</a>
                             </div>
                         </div>
                     </div>
@@ -947,6 +949,12 @@ function addNewSettingMenu() {
 
         saveSetting();
         location.reload();
+    });
+
+    $('#closeSetting').click(function() {
+        $('.script-setting-wrapper').fadeOut(200, function() {
+            $('.content-wrapper').fadeIn(200);
+        });
     });
 }
 
