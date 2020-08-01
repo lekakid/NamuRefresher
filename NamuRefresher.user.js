@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.7.1
+// @version     1.7.2
 // @include     https://arca.live/*
 // @include     https://*.arca.live/*
 // @run-at      document-start
