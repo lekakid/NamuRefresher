@@ -6,11 +6,13 @@
 // @include     https://*.arca.live/*
 // @run-at      document-start
 // @require     https://code.jquery.com/jquery-3.5.1.min.js
+// @require     https://unpkg.com/file-saver@2.0.2/dist/FileSaver.min.js
 // @downloadURL https://raw.githubusercontent.com/lekakid/NamuRefresher/master/NamuRefresher.user.js
 // @homepageURL https://github.com/lekakid/NamuRefresher
 // @supportURL  https://github.com/lekakid/NamuRefresher/issues
 // @grant       GM.getValue
 // @grant       GM.setValue
+// @grant       GM.xmlHttpRequest
 // ==/UserScript==
 
 // #region Utility
@@ -586,9 +588,10 @@ function applyImageMenu() {
     var context_menu_image = $(`
         <div class="image-context-wrapper">
             <div class="image-context-menu" data-url="" data-html="">
-                <a href="" class="list-item context-opentab" target="_blank">새 탭에서 원본 보기</a>
+                <a href="#" onclick="return false;" class="list-item context-copyimage">원본 이미지 클립보드에 복사</a>
+                <a href="#" onclick="return false;" class="list-item context-saveimage">원본 이미지 저장</a>
                 <a href="#" onclick="return false;" class="list-item context-copyurl">짤 주소 복사</a>
-                <a href="#" onclick="return false;"  class="list-item context-applymyimage">자짤로 등록</a>
+                <a href="#" onclick="return false;" class="list-item context-applymyimage">자짤로 등록</a>
                 <div class="context-search-wrapper">
                     <div class="list-devider"></div>
                     <a href="" class="list-item context-search-google" target="_blank">구글 검색</a>
@@ -626,13 +629,12 @@ function applyImageMenu() {
         if(context_close_event())
             return true;
 
-        context_menu_image.find('.image-context-menu').attr('data-url', e.target.src);
-        context_menu_image.find('.image-context-menu').attr('data-html', e.target.outerHTML);
-        context_menu_image.find('.context-opentab').attr('href', e.target.src + '?type=orig');
-        context_menu_image.find('.context-search-google').attr('href', `https://www.google.com/searchbyimage?safe=off&image_url=${e.target.src}`);
-        context_menu_image.find('.context-search-yandex').attr('href', `https://yandex.com/images/search?rpt=imageview&url=${e.target.src}`);
-        context_menu_image.find('.context-search-iqdb').attr('href', `https://iqdb.org/?url=${e.target.src}`);
-        context_menu_image.find('.context-search-saucenao').attr('href', `https://saucenao.com/search.php?db=999&dbmaski=32768&url=${e.target.src}`);
+        context_menu_image.find('.image-context-menu').attr('data-url', this.src);
+        context_menu_image.find('.image-context-menu').attr('data-html', this.outerHTML);
+        context_menu_image.find('.context-search-google').attr('href', `https://www.google.com/searchbyimage?safe=off&image_url=${this.src}`);
+        context_menu_image.find('.context-search-yandex').attr('href', `https://yandex.com/images/search?rpt=imageview&url=${this.src}`);
+        context_menu_image.find('.context-search-iqdb').attr('href', `https://iqdb.org/?url=${this.src}`);
+        context_menu_image.find('.context-search-saucenao').attr('href', `https://saucenao.com/search.php?db=999&dbmaski=32768&url=${this.src}`);
 
         if(e.target.nodeName == 'IMG') {
             $('.image-context-menu .context-search-wrapper').show();
@@ -649,13 +651,46 @@ function applyImageMenu() {
         return false;
     });
 
-    $('.context-copyurl').click(function() {
-        var tmp = document.createElement('textarea');
-        $(document.body).append(tmp);
-        tmp.value = $('.image-context-menu').attr('data-url') + '?type=orig';
-        tmp.select();
-        document.execCommand('copy');
-        tmp.remove();
+    $('.context-copyimage').click(function() {
+        var url = $('.image-context-menu').attr('data-url') + '?type=orig';
+        GM.xmlHttpRequest({
+            method: 'GET',
+            url,
+            responseType: 'arraybuffer',
+            onload: function(response) {
+                var buffer = response.response;
+                var blob = new Blob([buffer], {type: 'image/png'});
+                
+                var item = new ClipboardItem({[blob.type]: blob});
+                navigator.clipboard.write([item]);
+            },
+            onabort: function() {
+                alert('서버 연결 거부');
+            },
+            onerror: function() {
+                alert('오류 발생');
+            }
+        });
+    });
+    
+    $('.context-saveimage').click(function() {
+        var url = $('.image-context-menu').attr('data-url') + '?type=orig';
+        GM.xmlHttpRequest({
+            method: 'GET',
+            url,
+            responseType: 'blob',
+            onload: function(response) {
+                var data = response.response;
+                
+                saveAs(data, url.substring(url.lastIndexOf('/'), url.indexOf('?')));
+            },
+            onabort: function() {
+                alert('서버 연결 거부');
+            },
+            onerror: function() {
+                alert('오류 발생');
+            }
+        });
     });
 
     $('.context-applymyimage').click(function() {
