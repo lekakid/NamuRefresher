@@ -189,8 +189,8 @@ function refreshArticle(data) {
         $(item).parent().html($(item).text());
     });
 
-    var list_length = article_list.find('a.vrow').not('.notice').length;
-    var latest_num = article_list.find('a.vrow').not('.notice').first().find('span.col-id > span').text();
+    var list_length = article_list.find('a.vrow').not('.notice, .hide-notice-button').length;
+    var latest_num = article_list.find('a.vrow').not('.notice, .hide-notice-button').first().find('span.col-id > span').text();
 
     for(var i = 0; i < list_length; i++) {
         if(parseInt(newlist.eq(i).find('span.col-id > span').text()) > parseInt(latest_num)) {
@@ -198,7 +198,7 @@ function refreshArticle(data) {
         }
     }
 
-    article_list.find('a.vrow').not('.notice').remove();
+    article_list.find('a.vrow').not('.notice, .hide-notice-button').remove();
     article_list.append(newlist);
 
     article_list.find('a.new').css('animation', 'highlight ease-in-out 0.5s');
@@ -276,7 +276,44 @@ const HIDE_NOTICE_CSS = `
         display: none !important;
     }
 `
+const HIDE_NOTICE_BUTTON_CSS = `
+    .article-list .hide-notice-button {
+        display: flex !important;
+        justify-content: center;
+        width: 100%;
+        background-color: #eee !important;
+        color: #000 !important;
+    }
+
+    .article-list .hide-notice-button:focus {
+        text-decoration: none;
+    }
+`;
 var hide_notice_style = null;
+function applyHideNotice() {
+    addCSS(HIDE_NOTICE_BUTTON_CSS);
+    var hide_btn = $('<a class="vrow hide-notice-button" href="#"><div class="">공지사항 숨기기 ▲</div></a>').insertAfter($('.vrow.notice').last());
+    hide_btn.click(function() {
+        if(Setting.hideNotice.value) {
+            showNotice();
+            hide_btn.text('공지사항 숨기기 ▲');
+        }
+        else {
+            hideNotice();
+            hide_btn.text('공지사항 펼치기 ▼');
+        }
+
+        Setting.hideNotice.value = !Setting.hideNotice.value;
+        saveSetting();
+        return false;
+    });
+
+    if(Setting.hideNotice.value) {
+        hideNotice();
+        hide_btn.text('공지사항 펼치기 ▼');
+    }
+}
+
 function hideNotice() {
     if(hide_notice_style == null)
         hide_notice_style = addCSS(HIDE_NOTICE_CSS);
@@ -288,7 +325,6 @@ function showNotice() {
     if(hide_notice_style != null)
         hide_notice_style.remove();
 }
-
 // #endregion
 
 // #region Hide Profile Avatar
@@ -873,16 +909,6 @@ function addNewSettingMenu() {
                                 </div>
                             </div>
                             <div class="row">
-                                <label class="col-xs-3">${Setting.hideNotice.name}</label>
-                                <div class="col-xs-9">
-                                    <select id="hideNotice">
-                                        <option value="0">사용 안 함</option>
-                                        <option value="1">사용</option>
-                                    </select>
-                                    <p class="text-muted">${Setting.hideNotice.description}</p>
-                                </div>
-                            </div>
-                            <div class="row">
                                 <label class="col-xs-3">${Setting.hideAvatar.name}</label>
                                 <div class="col-xs-9">
                                     <select id="hideAvatar">
@@ -1000,7 +1026,6 @@ function addNewSettingMenu() {
 
 function applySettingView() {
     $('.script-setting-wrapper #useRefresh').val(Setting.refreshTime.value);
-    $('.script-setting-wrapper #hideNotice').val(Setting.hideNotice.value ? 1 : 0);
     $('.script-setting-wrapper #hideAvatar').val(Setting.hideAvatar.value ? 1 : 0);
     $('.script-setting-wrapper #hideContentImage').val(Setting.hideContentImage.value ? 1 : 0);
     
@@ -1048,7 +1073,7 @@ async function init() {
             if(Setting.hideAvatar.value) hideAvatar();
             if(Setting.hideContentImage.value) hideContentImage();
         case 'board':
-            if(Setting.hideNotice.value) hideNotice();
+            applyHideNotice();
             break;
         case 'write':
             applyMyImage();
