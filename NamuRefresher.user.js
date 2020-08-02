@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.9.0
+// @version     1.9.1
 // @include     https://arca.live/*
 // @include     https://*.arca.live/*
 // @run-at      document-start
@@ -637,9 +637,13 @@ function applyImageMenu() {
         context_menu_image.find('.context-search-saucenao').attr('href', `https://saucenao.com/search.php?db=999&dbmaski=32768&url=${this.src}`);
 
         if(e.target.nodeName == 'IMG') {
+            $('.image-context-menu .context-copyimage').show();
+            $('.image-context-menu .context-saveimage').show();
             $('.image-context-menu .context-search-wrapper').show();
         }
         else {
+            $('.image-context-menu .context-copyimage').hide();
+            $('.image-context-menu .context-saveimage').hide();
             $('.image-context-menu .context-search-wrapper').hide();
         }
 
