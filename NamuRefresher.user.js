@@ -1078,8 +1078,6 @@ async function init() {
         case 'article':
             if(Setting.hideAvatar.value) hideAvatar();
             if(Setting.hideContentImage.value) hideContentImage();
-        case 'board':
-            applyHideNotice();
             break;
         case 'write':
             applyMyImage();
@@ -1099,6 +1097,7 @@ async function init() {
                 applyImageMenu();
             case 'board':
                 if(Setting.refreshTime.value > 0) initRefresher();
+                applyHideNotice();
                 applyPreviewFilter();
                 break;
         }
