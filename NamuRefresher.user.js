@@ -697,12 +697,17 @@ function applyImageMenu() {
             method: 'GET',
             url,
             responseType: 'arraybuffer',
+            onprogress: function(event) {
+                $('.context-copyimage').text(`다운로드 중...(${Math.round(event.loaded / event.total * 100)}%)`);
+            },
             onload: function(response) {
                 var buffer = response.response;
                 var blob = new Blob([buffer], {type: 'image/png'});
                 
                 var item = new ClipboardItem({[blob.type]: blob});
                 navigator.clipboard.write([item]);
+                context_close_event();
+                $('.context-copyimage').text('원본 이미지 클립보드에 복사');
             },
             onabort: function() {
                 alert('서버 연결 거부');
@@ -711,6 +716,7 @@ function applyImageMenu() {
                 alert('오류 발생');
             }
         });
+        return false;
     });
     
     $('.context-saveimage').click(function() {
