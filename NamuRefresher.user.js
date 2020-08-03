@@ -625,7 +625,7 @@ function applyImageMenu() {
         <div class="image-context-wrapper">
             <div class="image-context-menu" data-url="" data-html="">
                 <a href="#" onclick="return false;" class="list-item context-copyimage">원본 이미지 클립보드에 복사</a>
-                <a href="#" onclick="return false;" class="list-item context-saveimage">원본 이미지 저장</a>
+                <a href="#" onclick="return false;" class="list-item context-saveimage">짤 저장</a>
                 <a href="#" onclick="return false;" class="list-item context-copyurl">짤 주소 복사</a>
                 <a href="#" onclick="return false;" class="list-item context-applymyimage">자짤로 등록</a>
                 <div class="context-search-wrapper">
@@ -674,12 +674,12 @@ function applyImageMenu() {
 
         if(e.target.nodeName == 'IMG') {
             $('.image-context-menu .context-copyimage').show();
-            $('.image-context-menu .context-saveimage').show();
+            $('.image-context-menu .context-saveimage').text('선택한 이미지 저장');
             $('.image-context-menu .context-search-wrapper').show();
         }
         else {
             $('.image-context-menu .context-copyimage').hide();
-            $('.image-context-menu .context-saveimage').hide();
+            $('.image-context-menu .context-saveimage').text('선택한 동영상 저장');
             $('.image-context-menu .context-search-wrapper').hide();
         }
 
