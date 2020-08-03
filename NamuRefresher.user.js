@@ -15,6 +15,8 @@
 // @grant       GM.setValue
 // @grant       GM.xmlHttpRequest
 // ==/UserScript==
+const UNSUPPORTED_VERSION = '1.5.2';
+const COMPATIBLE_VERSION = '1.10.0';
 
 // #region Utility
 function getTimeString(datetime) {
@@ -119,7 +121,7 @@ function playLoaderAnimation() {
     if (loader) {
         loader.removeAttr('style');
         setTimeout(function() {
-            loader.css('animation', 'loaderspin ' + Setting.refreshTime.value + 's ease-in-out');
+            loader.css('animation', 'loaderspin ' + Setting.refreshTime + 's ease-in-out');
         }, 50);
     }
 }
@@ -131,7 +133,7 @@ function removeLoader() {
 var loader_loop = null;
 function startArticleRefresh() {
     initLoader();
-    loader_loop = setInterval(getNewArticle, Setting.refreshTime.value * 1000);
+    loader_loop = setInterval(getNewArticle, Setting.refreshTime * 1000);
 }
 
 function stopArticleRefresh() {
@@ -201,7 +203,7 @@ function refreshArticle(data) {
 }
 
 function initRefresher() {
-    if(Setting.refreshTime.value == 0)
+    if(Setting.refreshTime == 0)
         return;
 
     addCSS(LOADER_CSS);
@@ -314,7 +316,7 @@ function applyHideNotice() {
                         </a>
                     `);
 
-    if(Setting.hideNotice.value) {
+    if(Setting.hideNotice) {
         hideNotice();
         hide_btn.text('공지사항 펼치기 ▼');
     }
@@ -322,7 +324,7 @@ function applyHideNotice() {
     $(document).ready(function() {
         hide_btn.insertAfter($('.vrow.notice').last());
         hide_btn.click(function() {
-            if(Setting.hideNotice.value) {
+            if(Setting.hideNotice) {
                 showNotice();
                 hide_btn.text('공지사항 숨기기 ▲');
             }
@@ -331,7 +333,7 @@ function applyHideNotice() {
                 hide_btn.text('공지사항 펼치기 ▼');
             }
 
-            Setting.hideNotice.value = !Setting.hideNotice.value;
+            Setting.hideNotice = !Setting.hideNotice;
             saveSetting();
             return false;
         });
@@ -385,7 +387,7 @@ function showContentImage() {
 
 // #region Set My Posting Image
 function applyMyImage() {
-    if(Setting.myImage.value == '')
+    if(Setting.myImage == '')
         return;
 
     var observer = new MutationObserver((mutations) => {
@@ -393,7 +395,7 @@ function applyMyImage() {
             if(m.target.className == 'note-editable') {
                 observer.disconnect();
                 
-                unsafeWindow.summernote.summernote('insertNode', $(Setting.myImage.value)[0]);
+                unsafeWindow.summernote.summernote('insertNode', $(Setting.myImage)[0]);
                 break;
             }
         }
@@ -761,7 +763,7 @@ function applyImageMenu() {
         });
 
         $('.context-applymyimage').click(function() {
-            Setting.myImage.value = $('.image-context-menu').attr('data-html');
+            Setting.myImage = $('.image-context-menu').attr('data-html');
             saveSetting();
             alert(SET_MY_IMAGE);
         });
@@ -779,77 +781,111 @@ const SETTING_RESET_CONFIRM = '모든 설정이 초기화 됩니다. 계속하�
 const USE = '사용';
 const UNUSE = '사용 안 함';
 
-var Setting = {
+let Setting = {
     version: GM.info.script.version,
+    refreshTime: 5,
+    hideNotice: false,
+    hideAvatar: true,
+    hideContentImage: false,
+    myImage: '',
+    filteredCategory: {}
+}
+
+const SettingInfo = {
     refreshTime: {
         name: '게시물 자동 새로고침',
-        description: '일정 시간마다 자동으로 게시물 목록을 갱신합니다.',
-        default: 5,
-        value: 5,
-        range: [0, 3, 5, 10]
+        description: '일정 시간마다 자동으로 게시물 목록을 갱신합니다.'
     },
     hideNotice: {
         name: '공지사항 숨기기',
-        description: '상단 공지사항을 제거해줍니다.',
-        default: false,
-        value: false
+        description: '상단 공지사항을 제거해줍니다.'
     },
     hideAvatar: {
         name: '프로필 아바타 숨기기',
-        description: '게시물 조회 시 이용자 옆 프로필 이미지를 제거합니다.',
-        default: true,
-        value: true
+        description: '게시물 조회 시 이용자 옆 프로필 이미지를 제거합니다.'
     },
     hideContentImage: {
-        name: '본문 이미지 숨기기',
-        description: '게시물 조회 시 본문 이미지를 숨깁니다.',
-        default: false,
-        value: false
+        name: '본문 미디어 컨텐츠 숨기기',
+        description: '게시물 조회 시 본문의 이미지, 동영상을 제거합니다.'
     },
     myImage: {
         name: '등록한 자짤 삭제',
-        description: '등록한 자짤을 삭제합니다.',
-        default: '',
-        value: ''
+        description: '등록한 자짤을 삭제합니다.'
     },
     filteredCategory: {
         name: '카테고리 미리보기 숨기기',
-        description: '체크한 카테고리의 미리보기를 표시하지 않습니다.',
-        default: {
-            '전체': false,
-            '일반': false
-        }
+        description: '체크한 카테고리의 미리보기를 표시하지 않습니다.'
     }
 }
 
+const DefaultCategory = {
+    '전체': false,
+    '일반': false
+}
+
+function compareVersion(saved_data, criteria) {
+    if(saved_data == null || saved_data.version == undefined)
+        return true;
+    
+    var a = saved_data.version.split('.');
+    var b = criteria.split('.');
+
+    var c = 0;
+    for(i = 0; i < a.length; i++) {
+        if(parseInt(a[i]) > parseInt(b[i])) 
+            break;
+        else if(parseInt(a[i]) < parseInt(b[i]))
+            return true;
+    }
+
+    return false;
+}
+
+function convertSetting(LoadedSetting) {
+    const NewSetting = Object.assign({}, Setting);
+    NewSetting.refreshTime = LoadedSetting.refreshTime.value;
+    NewSetting.hideNotice = LoadedSetting.hideNotice.value;
+    NewSetting.hideAvatar = LoadedSetting.hideAvatar.value;
+    NewSetting.hideContentImage = LoadedSetting.hideContentImage.value;
+    NewSetting.myImage = LoadedSetting.myImage.value;
+
+    const tmp = {};
+    for(key in LoadedSetting.filteredCategory) {
+        if(key == 'name' || key == 'description')
+            continue;
+
+        tmp[key] = Object.assign({}, LoadedSetting.filteredCategory[key]);
+    }
+
+    NewSetting.filteredCategory = tmp;
+
+    return NewSetting;
+}
+
 async function loadSetting() {
-    var setting_str = await GM.getValue('Setting', '');
-    if(setting_str == '') {
-        Setting.filteredCategory[channel] = $.extend({}, Setting.filteredCategory.default);
-        return;
-    }
+    const LoadedSetting = JSON.parse(await GM.getValue('Setting', 'null'));
 
-    Setting = JSON.parse(setting_str);
-
-    if(Setting.filteredCategory[channel] == undefined) {
-        Setting.filteredCategory[channel] = $.extend({}, Setting.filteredCategory.default);
+    if(compareVersion(LoadedSetting, UNSUPPORTED_VERSION))
         return;
+
+    if(compareVersion(LoadedSetting, COMPATIBLE_VERSION)) {
+        Setting = convertSetting(LoadedSetting);
+        saveSetting();
     }
+    else {
+        Setting = Object.assign(Setting, LoadedSetting);
+    
+    }
+    if(Setting.filteredCategory[channel] == undefined)
+        Setting.filteredCategory[channel] = Object.assign({}, DefaultCategory);
 }
 
 async function saveSetting() {
     await GM.setValue('Setting', JSON.stringify(Setting));
 }
 
-function resetSetting() {
-    Setting.version = GM.info.script.version;
-    Setting.refreshTime.value = Setting.refreshTime.default;
-    Setting.hideNotice.value = Setting.hideNotice.default;
-    Setting.hideAvatar.value = Setting.hideAvatar.default;
-    Setting.hideContentImage.value = Setting.hideContentImage.default;
-    Setting.myImage.value = Setting.myImage.default;
-    Setting.filteredCategory[channel] = $.extend({}, Setting.filteredCategory.default);
-    saveSetting();
+async function resetSetting() {
+    await GM.setValue('Setting', '');
 }
 
 const SETTING_CSS = `
@@ -925,7 +961,7 @@ function addNewSettingMenu() {
                         <div calss="card-block">
                             <h4 class="card-title">${SETTING_HEADER}</h4>
                             <div class="row">
-                                <label class="col-xs-3">${Setting.refreshTime.name}</label>
+                                <label class="col-xs-3">${SettingInfo.refreshTime.name}</label>
                                 <div class="col-xs-9">
                                     <select id="useRefresh">
                                         <option value="0">사용 안 함</option>
@@ -933,41 +969,41 @@ function addNewSettingMenu() {
                                         <option value="5">5초</option>
                                         <option value="10">10초</option>
                                     </select>
-                                    <p class="text-muted">${Setting.refreshTime.description}</p>
+                                    <p class="text-muted">${SettingInfo.refreshTime.description}</p>
                                 </div>
                             </div>
                             <div class="row">
-                                <label class="col-xs-3">${Setting.hideAvatar.name}</label>
+                                <label class="col-xs-3">${SettingInfo.hideAvatar.name}</label>
                                 <div class="col-xs-9">
                                     <select id="hideAvatar">
                                         <option value="0">사용 안 함</option>
                                         <option value="1">사용</option>
                                     </select>
-                                    <p class="text-muted">${Setting.hideAvatar.description}</p>
+                                    <p class="text-muted">${SettingInfo.hideAvatar.description}</p>
                                 </div>
                             </div>
                             <div class="row">
-                                <label class="col-xs-3">${Setting.hideContentImage.name}</label>
+                                <label class="col-xs-3">${SettingInfo.hideContentImage.name}</label>
                                 <div class="col-xs-9">
                                     <select id="hideContentImage">
                                         <option value="0">사용 안 함</option>
                                         <option value="1">사용</option>
                                     </select>
-                                    <p class="text-muted">${Setting.hideContentImage.description}</p>
+                                    <p class="text-muted">${SettingInfo.hideContentImage.description}</p>
                                 </div>
                             </div>
                             <div class="row">
-                                <label class="col-xs-3">${Setting.myImage.name}</label>
+                                <label class="col-xs-3">${SettingInfo.myImage.name}</label>
                                 <div class="col-xs-9">
                                     <a href="#" id="removeMyImage" class="btn btn-success">삭제</a>
-                                    <p class="text-muted">${Setting.myImage.description}</p>
+                                    <p class="text-muted">${SettingInfo.myImage.description}</p>
                                 </div>
                             </div>
                             <div class="row">
-                                <label class="col-xs-3">${Setting.filteredCategory.name}</label>
+                                <label class="col-xs-3">${SettingInfo.filteredCategory.name}</label>
                                 <div class="col-xs-9">
                                     <div class="category-group"></div>
-                                    <p class="text-muted">${Setting.filteredCategory.description}</p>
+                                    <p class="text-muted">${SettingInfo.filteredCategory.description}</p>
                                 </div>
                             </div>
                             <div class="row">
@@ -1013,7 +1049,7 @@ function addNewSettingMenu() {
         if(!confirm(REMOVE_MY_IMAGE_CONFIRM))
             return false;
 
-        Setting.myImage.value = '';
+        Setting.myImage = '';
         saveSetting();
         alert(REMOVE_MY_IMAGE_RESULT);
     });
@@ -1028,9 +1064,9 @@ function addNewSettingMenu() {
     });
 
     $('#saveAndClose').click(function() {
-        Setting.refreshTime.value = $('.script-setting-wrapper #useRefresh').val();
-        Setting.hideAvatar.value = $('.script-setting-wrapper #hideAvatar').val() == 1;
-        Setting.hideContentImage.value = $('.script-setting-wrapper #hideContentImage').val() == 1;
+        Setting.refreshTime = $('.script-setting-wrapper #useRefresh').val();
+        Setting.hideAvatar = $('.script-setting-wrapper #hideAvatar').val() == 1;
+        Setting.hideContentImage = $('.script-setting-wrapper #hideContentImage').val() == 1;
 
         var category = $('.script-setting-wrapper .category-group input');
         category.each(function(index, item) {
@@ -1052,9 +1088,9 @@ function addNewSettingMenu() {
 }
 
 function applySettingView() {
-    $('.script-setting-wrapper #useRefresh').val(Setting.refreshTime.value);
-    $('.script-setting-wrapper #hideAvatar').val(Setting.hideAvatar.value ? 1 : 0);
-    $('.script-setting-wrapper #hideContentImage').val(Setting.hideContentImage.value ? 1 : 0);
+    $('.script-setting-wrapper #useRefresh').val(Setting.refreshTime);
+    $('.script-setting-wrapper #hideAvatar').val(Setting.hideAvatar ? 1 : 0);
+    $('.script-setting-wrapper #hideContentImage').val(Setting.hideContentImage ? 1 : 0);
     
     for(key in Setting.filteredCategory[channel]) {
         if(Setting.filteredCategory[channel][key])
@@ -1099,8 +1135,8 @@ function initBoard(isArticleView) {
     article_list = $('.board-article-list .list-table, .included-article-list .list-table');
 
     if(isArticleView) {
-        if(Setting.hideAvatar.value) hideAvatar();
-        if(Setting.hideContentImage.value) hideContentImage();
+        if(Setting.hideAvatar) hideAvatar();
+        if(Setting.hideContentImage) hideContentImage();
         addReplyRefreshBtn();
         applyImageMenu();
     }
