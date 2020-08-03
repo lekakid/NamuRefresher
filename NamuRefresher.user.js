@@ -992,7 +992,7 @@ function addNewSettingMenu() {
             return false;
 
         Setting.myImage.value = '';
-        saveSetting;
+        saveSetting();
         alert(REMOVE_MY_IMAGE_RESULT);
     });
 
