@@ -109,10 +109,10 @@ const LOADER_CSS = `
 function initLoader() {
     removeLoader();
     $('.root-container').append('<div id="article_loader"></div>');
-    setLoader();
+    playLoaderAnimation();
 }
 
-function setLoader() {
+function playLoaderAnimation() {
     var loader = $('#article_loader');
 
     if (loader) {
@@ -130,7 +130,7 @@ function removeLoader() {
 var loader_loop = null;
 function startArticleRefresh() {
     initLoader();
-    loader_loop = setInterval(tryRefreshArticle, Setting.refreshTime.value * 1000);
+    loader_loop = setInterval(getNewArticle, Setting.refreshTime.value * 1000);
 }
 
 function stopArticleRefresh() {
@@ -139,7 +139,7 @@ function stopArticleRefresh() {
 }
 
 var current_request = null;
-function tryRefreshArticle() {
+function getNewArticle() {
     if(current_request !== null) {
         current_request.abort();
         initLoader();
@@ -152,30 +152,12 @@ function tryRefreshArticle() {
         dataType: "html",
         success: (data) => {
             current_request = null;
-            setLoader();
+            playLoaderAnimation();
             refreshArticle(data);
         },
         error: () => {
             current_request = null;
             console.log("AJAX Request Failed");
-        }
-    });
-}
-
-function initRefresher() {
-    if(loader_loop !== null) {
-        stopArticleRefresh();
-    }
-
-    startArticleRefresh();
-
-    document.addEventListener("visibilitychange", () => {
-        if (document.hidden) {
-            stopArticleRefresh();
-        } else {
-            if (loader_loop === null && Setting.refreshTime.value) {
-                $(document).ready(startArticleRefresh);
-            }
         }
     });
 }
@@ -216,6 +198,31 @@ function refreshArticle(data) {
 
     applyPreviewFilter();
 }
+
+function initRefresher() {
+    if(Setting.refreshTime.value == 0)
+        return;
+
+    addCSS(LOADER_CSS);
+
+    $(document).ready(function() {
+        if(loader_loop != null) {
+            stopArticleRefresh();
+        }
+        
+        startArticleRefresh();
+        
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden) {
+                stopArticleRefresh();
+            } else {
+                if (loader_loop == null) {
+                    startArticleRefresh();
+                }
+            }
+        });
+    });
+}
 // #endregion
 
 // #region Reply Refresh Button
@@ -248,26 +255,21 @@ function refreshComment(data) {
     $('.article-comment time').each(function(index, item) {
         $(item).text(getFullDateString($(item).attr('datetime')));
     });
-
-    if(Setting.hideAvatar.value)
-        hideAvatar();
 }
 
-function applyReplyRefreshBtn() {
+function addReplyRefreshBtn() {
     var btn = '<span>　</span><a class="btn btn-success" href="#"><span class="icon ion-android-refresh"></span> 새로고침</a>';
 
-    if($('.article-comment').length == 0)
-        return;
+    $(document).ready(function() {    
+        function onClickReplyRefresh() {
+            tryRefreshComment();
+            return false;
+        }
 
-    $(btn).insertAfter('.article-comment .title a').click(onClickReplyRefresh);
-    $(btn).appendTo('.article-comment .write-area .subtitle').click(onClickReplyRefresh);
+        $(btn).insertAfter('.article-comment .title a').click(onClickReplyRefresh);
+        $(btn).appendTo('.article-comment .write-area .subtitle').click(onClickReplyRefresh);
+    });
 }
-
-function onClickReplyRefresh() {
-    tryRefreshComment();
-    return false;
-}
-
 // #endregion
 
 // #region Hide Notice
@@ -290,30 +292,6 @@ const HIDE_NOTICE_BUTTON_CSS = `
     }
 `;
 var hide_notice_style = null;
-function applyHideNotice() {
-    addCSS(HIDE_NOTICE_BUTTON_CSS);
-    var hide_btn = $('<a class="vrow hide-notice-button" href="#"><div class="">공지사항 숨기기 ▲</div></a>').insertAfter($('.vrow.notice').last());
-    hide_btn.click(function() {
-        if(Setting.hideNotice.value) {
-            showNotice();
-            hide_btn.text('공지사항 숨기기 ▲');
-        }
-        else {
-            hideNotice();
-            hide_btn.text('공지사항 펼치기 ▼');
-        }
-
-        Setting.hideNotice.value = !Setting.hideNotice.value;
-        saveSetting();
-        return false;
-    });
-
-    if(Setting.hideNotice.value) {
-        hideNotice();
-        hide_btn.text('공지사항 펼치기 ▼');
-    }
-}
-
 function hideNotice() {
     if(hide_notice_style == null)
         hide_notice_style = addCSS(HIDE_NOTICE_CSS);
@@ -324,6 +302,39 @@ function hideNotice() {
 function showNotice() {
     if(hide_notice_style != null)
         hide_notice_style.remove();
+}
+
+function applyHideNotice() {
+    addCSS(HIDE_NOTICE_BUTTON_CSS);
+
+    var hide_btn = $(`
+                        <a class="vrow hide-notice-button" href="#">
+                            <div class="">공지사항 숨기기 ▲</div>
+                        </a>
+                    `);
+
+    if(Setting.hideNotice.value) {
+        hideNotice();
+        hide_btn.text('공지사항 펼치기 ▼');
+    }
+
+    $(document).ready(function() {
+        hide_btn.insertAfter($('.vrow.notice').last());
+        hide_btn.click(function() {
+            if(Setting.hideNotice.value) {
+                showNotice();
+                hide_btn.text('공지사항 숨기기 ▲');
+            }
+            else {
+                hideNotice();
+                hide_btn.text('공지사항 펼치기 ▼');
+            }
+
+            Setting.hideNotice.value = !Setting.hideNotice.value;
+            saveSetting();
+            return false;
+        });
+    });
 }
 // #endregion
 
@@ -468,7 +479,12 @@ function doUpload(files, count, total) {
     }
 
     if(count == 0) {
-        $('<div id="progress" style="width:100%;height:20px;background-color:#e2e2e2;position:relative"><div style="position:absolute;width:100%;text-align:center;font-weight:bold;color:#FFF">이미지 업로드 중...</div><div id="progressBar" style="background-color:#00b3a1;height:100%;width:0%;text-align:center;"></div></div>').insertBefore("#content");
+        $(`
+            <div id="progress" style="width:100%;height:20px;background-color:#e2e2e2;position:relative">
+                <div style="position:absolute;width:100%;text-align:center;font-weight:bold;color:#FFF">이미지 업로드 중...</div>
+                <div id="progressBar" style="background-color:#00b3a1;height:100%;width:0%;text-align:center;"></div>
+            </div>
+        `).insertBefore("#content");
     }
     var progressBar = $("#progressBar");
 
@@ -521,10 +537,8 @@ const HIDE_PREVIEW_CSS = `
         display:none;
     }
 `;
-var hide_preview_style = null;
 function applyPreviewFilter() {
-    if(hide_preview_style == null)
-        hide_preview_style = addCSS(HIDE_PREVIEW_CSS);
+    addCSS(HIDE_PREVIEW_CSS);
 
     article_list.children().each(function(index, item) {
         var tag = $(item).find('span.tag').text();
@@ -621,128 +635,130 @@ const SET_MY_IMAGE = '선택한 짤을 저장했습니다.\n다음에 게시물 
 function applyImageMenu() {
     addCSS(CONTEXT_MENU_CSS);
 
-    var context_menu_image = $(`
-        <div class="image-context-wrapper">
-            <div class="image-context-menu" data-url="" data-html="">
-                <a href="#" onclick="return false;" class="list-item context-copyimage">원본 이미지 클립보드에 복사</a>
-                <a href="#" onclick="return false;" class="list-item context-saveimage">짤 저장</a>
-                <a href="#" onclick="return false;" class="list-item context-copyurl">짤 주소 복사</a>
-                <a href="#" onclick="return false;" class="list-item context-applymyimage">자짤로 등록</a>
-                <div class="context-search-wrapper">
-                    <div class="list-devider"></div>
-                    <a href="" class="list-item context-search-google" target="_blank">구글 검색</a>
-                    <a href="" class="list-item context-search-yandex" target="_blank">Yandex 검색</a>
-                    <a href="" class="list-item context-search-iqdb" target="_blank">IQDB 검색</a>
-                    <a href="" class="list-item context-search-saucenao" target="_blank">SauceNao 검색</a>
+    $(document).ready(function() {
+        var context_menu_image = $(`
+            <div class="image-context-wrapper">
+                <div class="image-context-menu" data-url="" data-html="">
+                    <a href="#" onclick="return false;" class="list-item context-copyimage">원본 이미지 클립보드에 복사</a>
+                    <a href="#" onclick="return false;" class="list-item context-saveimage">짤 저장</a>
+                    <a href="#" onclick="return false;" class="list-item context-copyurl">짤 주소 복사</a>
+                    <a href="#" onclick="return false;" class="list-item context-applymyimage">자짤로 등록</a>
+                    <div class="context-search-wrapper">
+                        <div class="list-devider"></div>
+                        <a href="" class="list-item context-search-google" target="_blank">구글 검색</a>
+                        <a href="" class="list-item context-search-yandex" target="_blank">Yandex 검색</a>
+                        <a href="" class="list-item context-search-iqdb" target="_blank">IQDB 검색</a>
+                        <a href="" class="list-item context-search-saucenao" target="_blank">SauceNao 검색</a>
+                    </div>
                 </div>
             </div>
-        </div>
-    `).appendTo('.root-container').hide();
-    context_menu_image.contextmenu(function() { return false; });
+        `).appendTo('.root-container').hide();
+        context_menu_image.contextmenu(function() { return false; });
 
-    if(window.outerWidth <= 768) {
-        context_menu_image.addClass('mobile');
-    }
-
-    function context_close_event() {
-        if(context_menu_image.css('display') != 'none') {
-            context_menu_image.hide();
-            return true;
-        }
-        return false;
-    }
-
-    $(document).click(function() {
-        context_close_event();
-        return true;
-    }).contextmenu(function() {
-        context_close_event();
-        return true;
-    });
-    document.addEventListener('scroll', context_close_event);
-    
-    $('.article-body img, .article-body video').contextmenu(function(e) {
-        if(context_close_event())
-            return true;
-
-        context_menu_image.find('.image-context-menu').attr('data-url', this.src);
-        context_menu_image.find('.image-context-menu').attr('data-html', this.outerHTML);
-        context_menu_image.find('.context-search-google').attr('href', `https://www.google.com/searchbyimage?safe=off&image_url=${this.src}`);
-        context_menu_image.find('.context-search-yandex').attr('href', `https://yandex.com/images/search?rpt=imageview&url=${this.src}`);
-        context_menu_image.find('.context-search-iqdb').attr('href', `https://iqdb.org/?url=${this.src}`);
-        context_menu_image.find('.context-search-saucenao').attr('href', `https://saucenao.com/search.php?db=999&dbmaski=32768&url=${this.src}`);
-
-        if(e.target.nodeName == 'IMG') {
-            $('.image-context-menu .context-copyimage').show();
-            $('.image-context-menu .context-saveimage').text('선택한 이미지 저장');
-            $('.image-context-menu .context-search-wrapper').show();
-        }
-        else {
-            $('.image-context-menu .context-copyimage').hide();
-            $('.image-context-menu .context-saveimage').text('선택한 동영상 저장');
-            $('.image-context-menu .context-search-wrapper').hide();
+        if(window.outerWidth <= 768) {
+            context_menu_image.addClass('mobile');
         }
 
-        if(!context_menu_image.hasClass('mobile')) {
-            context_menu_image.find('.image-context-menu').css('top', e.pageY + 3 - $(document).scrollTop());
-            context_menu_image.find('.image-context-menu').css('left', e.pageX + 3);
-        }
-        context_menu_image.fadeIn(200);
-        return false;
-    });
-
-    $('.context-copyimage').click(function() {
-        var url = $('.image-context-menu').attr('data-url') + '?type=orig';
-        GM.xmlHttpRequest({
-            method: 'GET',
-            url,
-            responseType: 'arraybuffer',
-            onprogress: function(event) {
-                $('.context-copyimage').text(`다운로드 중...(${Math.round(event.loaded / event.total * 100)}%)`);
-            },
-            onload: function(response) {
-                var buffer = response.response;
-                var blob = new Blob([buffer], {type: 'image/png'});
-                
-                var item = new ClipboardItem({[blob.type]: blob});
-                navigator.clipboard.write([item]);
-                context_close_event();
-                $('.context-copyimage').text('원본 이미지 클립보드에 복사');
-            },
-            onabort: function() {
-                alert('서버 연결 거부');
-            },
-            onerror: function() {
-                alert('오류 발생');
+        function context_close_event() {
+            if(context_menu_image.css('display') != 'none') {
+                context_menu_image.hide();
+                return true;
             }
-        });
-        return false;
-    });
-    
-    $('.context-saveimage').click(function() {
-        var url = $('.image-context-menu').attr('data-url') + '?type=orig';
-        GM.xmlHttpRequest({
-            method: 'GET',
-            url,
-            responseType: 'blob',
-            onload: function(response) {
-                var data = response.response;
-                
-                saveAs(data, url.substring(url.lastIndexOf('/'), url.indexOf('?')));
-            },
-            onabort: function() {
-                alert('서버 연결 거부');
-            },
-            onerror: function() {
-                alert('오류 발생');
-            }
-        });
-    });
+            return false;
+        }
 
-    $('.context-applymyimage').click(function() {
-        Setting.myImage.value = $('.image-context-menu').attr('data-html');
-        saveSetting();
-        alert(SET_MY_IMAGE);
+        $(document).click(function() {
+            context_close_event();
+            return true;
+        }).contextmenu(function() {
+            context_close_event();
+            return true;
+        });
+        document.addEventListener('scroll', context_close_event);
+        
+        $('.article-body img, .article-body video').contextmenu(function(e) {
+            if(context_close_event())
+                return true;
+
+            context_menu_image.find('.image-context-menu').attr('data-url', this.src);
+            context_menu_image.find('.image-context-menu').attr('data-html', this.outerHTML);
+            context_menu_image.find('.context-search-google').attr('href', `https://www.google.com/searchbyimage?safe=off&image_url=${this.src}`);
+            context_menu_image.find('.context-search-yandex').attr('href', `https://yandex.com/images/search?rpt=imageview&url=${this.src}`);
+            context_menu_image.find('.context-search-iqdb').attr('href', `https://iqdb.org/?url=${this.src}`);
+            context_menu_image.find('.context-search-saucenao').attr('href', `https://saucenao.com/search.php?db=999&dbmaski=32768&url=${this.src}`);
+
+            if(e.target.nodeName == 'IMG') {
+                $('.image-context-menu .context-copyimage').show();
+                $('.image-context-menu .context-saveimage').text('선택한 이미지 저장');
+                $('.image-context-menu .context-search-wrapper').show();
+            }
+            else {
+                $('.image-context-menu .context-copyimage').hide();
+                $('.image-context-menu .context-saveimage').text('선택한 동영상 저장');
+                $('.image-context-menu .context-search-wrapper').hide();
+            }
+
+            if(!context_menu_image.hasClass('mobile')) {
+                context_menu_image.find('.image-context-menu').css('top', e.pageY + 3 - $(document).scrollTop());
+                context_menu_image.find('.image-context-menu').css('left', e.pageX + 3);
+            }
+            context_menu_image.fadeIn(200);
+            return false;
+        });
+
+        $('.context-copyimage').click(function() {
+            var url = $('.image-context-menu').attr('data-url') + '?type=orig';
+            GM.xmlHttpRequest({
+                method: 'GET',
+                url,
+                responseType: 'arraybuffer',
+                onprogress: function(event) {
+                    $('.context-copyimage').text(`다운로드 중...(${Math.round(event.loaded / event.total * 100)}%)`);
+                },
+                onload: function(response) {
+                    var buffer = response.response;
+                    var blob = new Blob([buffer], {type: 'image/png'});
+                    
+                    var item = new ClipboardItem({[blob.type]: blob});
+                    navigator.clipboard.write([item]);
+                    context_close_event();
+                    $('.context-copyimage').text('원본 이미지 클립보드에 복사');
+                },
+                onabort: function() {
+                    alert('서버 연결 거부');
+                },
+                onerror: function() {
+                    alert('오류 발생');
+                }
+            });
+            return false;
+        });
+        
+        $('.context-saveimage').click(function() {
+            var url = $('.image-context-menu').attr('data-url') + '?type=orig';
+            GM.xmlHttpRequest({
+                method: 'GET',
+                url,
+                responseType: 'blob',
+                onload: function(response) {
+                    var data = response.response;
+                    
+                    saveAs(data, url.substring(url.lastIndexOf('/'), url.indexOf('?')));
+                },
+                onabort: function() {
+                    alert('서버 연결 거부');
+                },
+                onerror: function() {
+                    alert('오류 발생');
+                }
+            });
+        });
+
+        $('.context-applymyimage').click(function() {
+            Setting.myImage.value = $('.image-context-menu').attr('data-html');
+            saveSetting();
+            alert(SET_MY_IMAGE);
+        });
     });
 }
 // #endregion
@@ -1042,13 +1058,10 @@ function applySettingView() {
 }
 // #endregion
 
-var article_list = null;
 var channel = null;
-async function init() {
+async function initialize() {
     addCSS(HEADER_CSS);
     addCSS(SETTING_CSS);
-
-    addCSS(LOADER_CSS);
 
     var state;
     var pathname = location.pathname.split('/');
@@ -1058,50 +1071,46 @@ async function init() {
     }
 
     channel = pathname[2];
+    await loadSetting();
 
     if(pathname[3] == undefined || pathname[3] == '') {
-        state = 'board';
+        initBoard(false);
     }
     else if(pathname[4] == 'edit') {
-        state = 'edit';
+        initWrite(true);
     }
     else if(pathname[3] == 'write') {
-        state = 'write';
+        initWrite(false);
     }
     else if(/[0-9]+/.test(pathname[3])) {
-        state = 'article';
+        initBoard(true);
     }
 
-    await loadSetting();
-    
-    switch(state) {
-        case 'article':
-            if(Setting.hideAvatar.value) hideAvatar();
-            if(Setting.hideContentImage.value) hideContentImage();
-            break;
-        case 'write':
-            applyMyImage();
-        case 'edit':
-            applyAdvancedImgUploader();
-            break;
-    }
-
-    $(document).ready(function() {
-        article_list = $('.board-article-list .list-table, .included-article-list .list-table');
-
-        addNewSettingMenu();
-
-        switch(state) {
-            case 'article':
-                applyReplyRefreshBtn();
-                applyImageMenu();
-            case 'board':
-                if(Setting.refreshTime.value > 0) initRefresher();
-                applyHideNotice();
-                applyPreviewFilter();
-                break;
-        }
-    });
+    addNewSettingMenu();
 }
 
-init();
+var article_list = null;
+function initBoard(isArticleView) {
+    article_list = $('.board-article-list .list-table, .included-article-list .list-table');
+
+    if(isArticleView) {
+        if(Setting.hideAvatar.value) hideAvatar();
+        if(Setting.hideContentImage.value) hideContentImage();
+        addReplyRefreshBtn();
+        applyImageMenu();
+    }
+
+    initRefresher();
+    applyHideNotice();
+    applyPreviewFilter();
+}
+
+function initWrite(isEditView) {
+    if(!isEditView) {
+        applyMyImage();
+    }
+
+    applyAdvancedImgUploader();
+}
+
+initialize();
