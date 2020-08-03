@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        NamuRefresher
 // @author      LeKAKiD
-// @version     1.9.4
+// @version     1.9.5
 // @include     https://arca.live/*
 // @include     https://*.arca.live/*
 // @run-at      document-start
@@ -992,7 +992,7 @@ function addNewSettingMenu() {
             return false;
 
         Setting.myImage.value = '';
-        saveSetting;
+        saveSetting();
         alert(REMOVE_MY_IMAGE_RESULT);
     });
 
@@ -1007,7 +1007,6 @@ function addNewSettingMenu() {
 
     $('#saveAndClose').click(function() {
         Setting.refreshTime.value = $('.script-setting-wrapper #useRefresh').val();
-        Setting.hideNotice.value = $('.script-setting-wrapper #hideNotice').val() == 1;
         Setting.hideAvatar.value = $('.script-setting-wrapper #hideAvatar').val() == 1;
         Setting.hideContentImage.value = $('.script-setting-wrapper #hideContentImage').val() == 1;
 
