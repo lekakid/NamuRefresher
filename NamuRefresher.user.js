@@ -631,7 +631,12 @@ const CONTEXT_MENU_CSS = `
         text-decoration: none;
     }
 `;
+const COPY_IMAGE = '원본 이미지 클립보드에 복사';
+const SAVE_IMAGE = '원본 이미지 저장';
+const SAVE_VIDEO = '원본 동영상 저장';
 const SET_MY_IMAGE = '선택한 짤을 저장했습니다.\n다음에 게시물 작성 시 게시물 상단에 자동으로 추가됩니다.';
+const CONNECTION_ABORT = '서버 연결 거부';
+const ON_ERROR = '오류 발생';
 function applyImageMenu() {
     addCSS(CONTEXT_MENU_CSS);
 
@@ -639,9 +644,9 @@ function applyImageMenu() {
         var context_menu_image = $(`
             <div class="image-context-wrapper">
                 <div class="image-context-menu" data-url="" data-html="">
-                    <a href="#" onclick="return false;" class="list-item context-copyimage">원본 이미지 클립보드에 복사</a>
-                    <a href="#" onclick="return false;" class="list-item context-saveimage">짤 저장</a>
-                    <a href="#" onclick="return false;" class="list-item context-copyurl">짤 주소 복사</a>
+                    <a href="#" onclick="return false;" class="list-item context-copyimage">${COPY_IMAGE}</a>
+                    <a href="#" onclick="return false;" class="list-item context-saveimage">SAVE_SOMETHING</a>
+                    <a href="#" onclick="return false;" class="list-item context-copyurl">원본 주소 복사</a>
                     <a href="#" onclick="return false;" class="list-item context-applymyimage">자짤로 등록</a>
                     <div class="context-search-wrapper">
                         <div class="list-devider"></div>
@@ -689,12 +694,12 @@ function applyImageMenu() {
 
             if(e.target.nodeName == 'IMG') {
                 $('.image-context-menu .context-copyimage').show();
-                $('.image-context-menu .context-saveimage').text('선택한 이미지 저장');
+                $('.image-context-menu .context-saveimage').text(SAVE_IMAGE);
                 $('.image-context-menu .context-search-wrapper').show();
             }
             else {
                 $('.image-context-menu .context-copyimage').hide();
-                $('.image-context-menu .context-saveimage').text('선택한 동영상 저장');
+                $('.image-context-menu .context-saveimage').text(SAVE_VIDEO);
                 $('.image-context-menu .context-search-wrapper').hide();
             }
 
@@ -722,13 +727,13 @@ function applyImageMenu() {
                     var item = new ClipboardItem({[blob.type]: blob});
                     navigator.clipboard.write([item]);
                     context_close_event();
-                    $('.context-copyimage').text('원본 이미지 클립보드에 복사');
+                    $('.context-copyimage').text(COPY_IMAGE);
                 },
                 onabort: function() {
-                    alert('서버 연결 거부');
+                    alert(CONNECTION_ABORT);
                 },
                 onerror: function() {
-                    alert('오류 발생');
+                    alert(ON_ERROR);
                 }
             });
             return false;
@@ -746,10 +751,10 @@ function applyImageMenu() {
                     saveAs(data, url.substring(url.lastIndexOf('/'), url.indexOf('?')));
                 },
                 onabort: function() {
-                    alert('서버 연결 거부');
+                    alert(CONNECTION_ABORT);
                 },
                 onerror: function() {
-                    alert('오류 발생');
+                    alert(ON_ERROR);
                 }
             });
         });
