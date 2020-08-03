@@ -1007,7 +1007,6 @@ function addNewSettingMenu() {
 
     $('#saveAndClose').click(function() {
         Setting.refreshTime.value = $('.script-setting-wrapper #useRefresh').val();
-        Setting.hideNotice.value = $('.script-setting-wrapper #hideNotice').val() == 1;
         Setting.hideAvatar.value = $('.script-setting-wrapper #hideAvatar').val() == 1;
         Setting.hideContentImage.value = $('.script-setting-wrapper #hideContentImage').val() == 1;
 
