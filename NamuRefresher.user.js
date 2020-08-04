@@ -931,158 +931,162 @@ const SETTING_CSS = `
         text-align: right;
     }
 `;
-function addNewSettingMenu() {
-    var nav = $('ul.navbar-nav').first();
-    var menubtn = `
-        <li class="nav-item dropdown">
-            <a aria-expanded="false" class="nav-link" href="#">
-            <span class="hidden-sm-down">${SETTNG_BUTTON_NAME}</span>
-            <span class="hidden-md-up"><span class="ion-gear-a"></span></span>
-            </a>
-        </li>`;
-    $(menubtn).appendTo(nav).click(function () {
-        if($('.script-setting-wrapper').css('display') != 'none')
+function addSettingMenu() {
+    addCSS(SETTING_CSS);
+
+    $(document).ready(function() {
+        var nav = $('ul.navbar-nav').first();
+        var menubtn = `
+            <li class="nav-item dropdown">
+                <a aria-expanded="false" class="nav-link" href="#">
+                <span class="hidden-sm-down">${SETTNG_BUTTON_NAME}</span>
+                <span class="hidden-md-up"><span class="ion-gear-a"></span></span>
+                </a>
+            </li>`;
+        $(menubtn).appendTo(nav).click(function () {
+            if($('.script-setting-wrapper').css('display') != 'none')
+                return false;
+
+            applySettingView();
+
+            $('.content-wrapper').fadeOut(200, function() {
+                $('.script-setting-wrapper').fadeIn(200);
+            });
             return false;
-
-        applySettingView();
-
-        $('.content-wrapper').fadeOut(200, function() {
-            $('.script-setting-wrapper').fadeIn(200);
         });
-        return false;
-    });
 
-    var menu_wrapper = `
-        <div class="script-setting-wrapper clearfix">
-            <div class="row">
-                <div class="col-sm-0 col-md-2"></div>
-                <div class="col-sm-12 col-md-8">
-                    <div class="dialog card">
-                        <div calss="card-block">
-                            <h4 class="card-title">${SETTING_HEADER}</h4>
-                            <div class="row">
-                                <label class="col-xs-3">${SettingInfo.refreshTime.name}</label>
-                                <div class="col-xs-9">
-                                    <select id="useRefresh">
-                                        <option value="0">사용 안 함</option>
-                                        <option value="3">3초</option>
-                                        <option value="5">5초</option>
-                                        <option value="10">10초</option>
-                                    </select>
-                                    <p class="text-muted">${SettingInfo.refreshTime.description}</p>
+        var menu_wrapper = `
+            <div class="script-setting-wrapper clearfix">
+                <div class="row">
+                    <div class="col-sm-0 col-md-2"></div>
+                    <div class="col-sm-12 col-md-8">
+                        <div class="dialog card">
+                            <div calss="card-block">
+                                <h4 class="card-title">${SETTING_HEADER}</h4>
+                                <div class="row">
+                                    <label class="col-xs-3">${SettingInfo.refreshTime.name}</label>
+                                    <div class="col-xs-9">
+                                        <select id="useRefresh">
+                                            <option value="0">사용 안 함</option>
+                                            <option value="3">3초</option>
+                                            <option value="5">5초</option>
+                                            <option value="10">10초</option>
+                                        </select>
+                                        <p class="text-muted">${SettingInfo.refreshTime.description}</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="row">
-                                <label class="col-xs-3">${SettingInfo.hideAvatar.name}</label>
-                                <div class="col-xs-9">
-                                    <select id="hideAvatar">
-                                        <option value="0">사용 안 함</option>
-                                        <option value="1">사용</option>
-                                    </select>
-                                    <p class="text-muted">${SettingInfo.hideAvatar.description}</p>
+                                <div class="row">
+                                    <label class="col-xs-3">${SettingInfo.hideAvatar.name}</label>
+                                    <div class="col-xs-9">
+                                        <select id="hideAvatar">
+                                            <option value="0">사용 안 함</option>
+                                            <option value="1">사용</option>
+                                        </select>
+                                        <p class="text-muted">${SettingInfo.hideAvatar.description}</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="row">
-                                <label class="col-xs-3">${SettingInfo.hideContentImage.name}</label>
-                                <div class="col-xs-9">
-                                    <select id="hideContentImage">
-                                        <option value="0">사용 안 함</option>
-                                        <option value="1">사용</option>
-                                    </select>
-                                    <p class="text-muted">${SettingInfo.hideContentImage.description}</p>
+                                <div class="row">
+                                    <label class="col-xs-3">${SettingInfo.hideContentImage.name}</label>
+                                    <div class="col-xs-9">
+                                        <select id="hideContentImage">
+                                            <option value="0">사용 안 함</option>
+                                            <option value="1">사용</option>
+                                        </select>
+                                        <p class="text-muted">${SettingInfo.hideContentImage.description}</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="row">
-                                <label class="col-xs-3">${SettingInfo.myImage.name}</label>
-                                <div class="col-xs-9">
-                                    <a href="#" id="removeMyImage" class="btn btn-success">삭제</a>
-                                    <p class="text-muted">${SettingInfo.myImage.description}</p>
+                                <div class="row">
+                                    <label class="col-xs-3">${SettingInfo.myImage.name}</label>
+                                    <div class="col-xs-9">
+                                        <a href="#" id="removeMyImage" class="btn btn-success">삭제</a>
+                                        <p class="text-muted">${SettingInfo.myImage.description}</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="row">
-                                <label class="col-xs-3">${SettingInfo.filteredCategory.name}</label>
-                                <div class="col-xs-9">
-                                    <div class="category-group"></div>
-                                    <p class="text-muted">${SettingInfo.filteredCategory.description}</p>
+                                <div class="row">
+                                    <label class="col-xs-3">${SettingInfo.filteredCategory.name}</label>
+                                    <div class="col-xs-9">
+                                        <div class="category-group"></div>
+                                        <p class="text-muted">${SettingInfo.filteredCategory.description}</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-xs-6">
-                                    <a href="#" id="resetSetting" class="btn btn-danger">설정 초기화</a>
-                                </div>
-                                <div class="col-xs-6 align-right">
-                                    <a href="#" id="saveAndClose" class="btn btn-primary">저장</a>
-                                    <a href="#" id="closeSetting" class="btn btn-success">닫기</a>
+                                <div class="row">
+                                    <div class="col-xs-6">
+                                        <a href="#" id="resetSetting" class="btn btn-danger">설정 초기화</a>
+                                    </div>
+                                    <div class="col-xs-6 align-right">
+                                        <a href="#" id="saveAndClose" class="btn btn-primary">저장</a>
+                                        <a href="#" id="closeSetting" class="btn btn-success">닫기</a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    `;
-    $(menu_wrapper).insertAfter('.content-wrapper').hide();
+        `;
+        $(menu_wrapper).insertAfter('.content-wrapper').hide();
 
-    var category = $('.content-wrapper .board-category a');
-    var category_btn = `
-        <span>
-            <input type="checkbox" id="">
-            <label for=""></label>
-        </span>
-    `;
-    var general = $(category_btn);
-    general.find('input').attr('id', '전체');
-    general.find('label').attr('for', '전체');
-    general.find('label').text('전체');
-    general.appendTo('.category-group');
-    category.each(function(index, item) {
-        var data = $(item).text();
-        data = data == "전체" ? "일반" : data;
-        var btn = $(category_btn);
-        btn.find('input').attr('id', data);
-        btn.find('label').attr('for', data);
-        btn.find('label').text(data);
-        btn.appendTo('.category-group');
-    });
-
-    $('#removeMyImage').click(function() {
-        if(!confirm(REMOVE_MY_IMAGE_CONFIRM))
-            return false;
-
-        Setting.myImage = '';
-        saveSetting();
-        alert(REMOVE_MY_IMAGE_RESULT);
-    });
-
-    $('#resetSetting').click(function() {
-        if(!confirm(SETTING_RESET_CONFIRM))
-            return false;
-
-        resetSetting();
-        location.reload();
-        return false;
-    });
-
-    $('#saveAndClose').click(function() {
-        Setting.refreshTime = $('.script-setting-wrapper #useRefresh').val();
-        Setting.hideAvatar = $('.script-setting-wrapper #hideAvatar').val() == 1;
-        Setting.hideContentImage = $('.script-setting-wrapper #hideContentImage').val() == 1;
-
-        var category = $('.script-setting-wrapper .category-group input');
+        var category = $('.content-wrapper .board-category a');
+        var category_btn = `
+            <span>
+                <input type="checkbox" id="">
+                <label for=""></label>
+            </span>
+        `;
+        var general = $(category_btn);
+        general.find('input').attr('id', '전체');
+        general.find('label').attr('for', '전체');
+        general.find('label').text('전체');
+        general.appendTo('.category-group');
         category.each(function(index, item) {
-            if(Setting.filteredCategory[channel] == undefined) {
-                Setting.filteredCategory[channel] = $.extend({}, Setting.filteredCategory.default);
-            }
-            Setting.filteredCategory[channel][item.id] = $(item).is(':checked');
+            var data = $(item).text();
+            data = data == "전체" ? "일반" : data;
+            var btn = $(category_btn);
+            btn.find('input').attr('id', data);
+            btn.find('label').attr('for', data);
+            btn.find('label').text(data);
+            btn.appendTo('.category-group');
         });
 
-        saveSetting();
-        location.reload();
-    });
+        $('#removeMyImage').click(function() {
+            if(!confirm(REMOVE_MY_IMAGE_CONFIRM))
+                return false;
 
-    $('#closeSetting').click(function() {
-        $('.script-setting-wrapper').fadeOut(200, function() {
-            $('.content-wrapper').fadeIn(200);
+            Setting.myImage = '';
+            saveSetting();
+            alert(REMOVE_MY_IMAGE_RESULT);
+        });
+
+        $('#resetSetting').click(function() {
+            if(!confirm(SETTING_RESET_CONFIRM))
+                return false;
+
+            resetSetting();
+            location.reload();
+            return false;
+        });
+
+        $('#saveAndClose').click(function() {
+            Setting.refreshTime = $('.script-setting-wrapper #useRefresh').val();
+            Setting.hideAvatar = $('.script-setting-wrapper #hideAvatar').val() == 1;
+            Setting.hideContentImage = $('.script-setting-wrapper #hideContentImage').val() == 1;
+
+            var category = $('.script-setting-wrapper .category-group input');
+            category.each(function(index, item) {
+                if(Setting.filteredCategory[channel] == undefined) {
+                    Setting.filteredCategory[channel] = $.extend({}, Setting.filteredCategory.default);
+                }
+                Setting.filteredCategory[channel][item.id] = $(item).is(':checked');
+            });
+
+            saveSetting();
+            location.reload();
+        });
+
+        $('#closeSetting').click(function() {
+            $('.script-setting-wrapper').fadeOut(200, function() {
+                $('.content-wrapper').fadeIn(200);
+            });
         });
     });
 }
@@ -1103,9 +1107,7 @@ function applySettingView() {
 var channel = null;
 async function initialize() {
     addCSS(HEADER_CSS);
-    addCSS(SETTING_CSS);
 
-    var state;
     var pathname = location.pathname.split('/');
 
     if(pathname[1] != 'b') {
@@ -1128,7 +1130,7 @@ async function initialize() {
         initBoard(true);
     }
 
-    addNewSettingMenu();
+    addSettingMenu();
 }
 
 var article_list = null;
