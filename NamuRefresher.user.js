@@ -769,6 +769,10 @@ function applyImageMenu() {
 }
 // #endregion
 
+// #region Content Block
+
+// #endregion
+
 // #region Setting
 const SETTNG_BUTTON_NAME = '스크립트 설정';
 const SETTING_HEADER = '아카 리프레셔 (Arca Refresher) 설정';
@@ -786,7 +790,9 @@ let Setting = {
     hideAvatar: true,
     hideContentImage: false,
     myImage: '',
-    filteredCategory: {}
+    filteredCategory: {},
+    blockKeyword: [],
+    blockUser: []
 }
 
 const SettingInfo = {
@@ -813,6 +819,14 @@ const SettingInfo = {
     filteredCategory: {
         name: '카테고리 미리보기 숨기기',
         description: '체크한 카테고리의 미리보기를 표시하지 않습니다.'
+    },
+    blockUser: {
+        name: '이용자 차단',
+        description: '작성한 키워드를 포함하는 닉네임을 가진 인원이 쓴 글과 댓글을 표시하지 않습니다.'
+    },
+    blockKeyword: {
+        name: '키워드 차단',
+        description: '작성한 키워드가 포함된 제목의 글, 댓글을 표시하지 않습니다.'
     }
 }
 
@@ -895,7 +909,8 @@ const SETTING_CSS = `
         padding: 1rem;
     }
 
-    .script-setting-wrapper select {
+    .script-setting-wrapper select,
+    .script-setting-wrapper textarea {
         display: block;
         width: 100%;
         padding: .5rem .75rem;
@@ -1007,14 +1022,28 @@ function addSettingMenu() {
                                         <p class="text-muted">${SettingInfo.filteredCategory.description}</p>
                                     </div>
                                 </div>
-                                <div class="row">
-                                    <div class="col-xs-6">
-                                        <a href="#" id="resetSetting" class="btn btn-danger">설정 초기화</a>
-                                    </div>
-                                    <div class="col-xs-6 align-right">
-                                        <a href="#" id="saveAndClose" class="btn btn-primary">저장</a>
-                                        <a href="#" id="closeSetting" class="btn btn-success">닫기</a>
-                                    </div>
+                            </div>
+                            <div class="row">
+                                <label class="col-xs-3">${SettingInfo.blockUser.name}</label>
+                                <div class="col-xs-9">
+                                    <textarea id="block-user" rows="6" placeholder="차단할 이용자의 닉네임을 입력, 줄바꿈으로 구별합니다."></textarea>
+                                    <p class="text-muted">${SettingInfo.blockUser.description}</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <label class="col-xs-3">${SettingInfo.blockKeyword.name}</label>
+                                <div class="col-xs-9">
+                                    <textarea id="block-keyword" rows="6" placeholder="차단할 키워드를 입력, 줄바꿈으로 구별합니다."></textarea>
+                                    <p class="text-muted">${SettingInfo.blockKeyword.description}</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    <a href="#" id="resetSetting" class="btn btn-danger">설정 초기화</a>
+                                </div>
+                                <div class="col-xs-6 align-right">
+                                    <a href="#" id="saveAndClose" class="btn btn-primary">저장</a>
+                                    <a href="#" id="closeSetting" class="btn btn-success">닫기</a>
                                 </div>
                             </div>
                         </div>
