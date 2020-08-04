@@ -770,7 +770,50 @@ function applyImageMenu() {
 // #endregion
 
 // #region Content Block
+function applyCommentBlock() {
+    document.addEventListener('DOMContentLoaded', () => {
+        const articles = document.querySelectorAll('.comment-item');
+    
+        articles.forEach((item) => {
+            const author = item.querySelector('.user-info');
+            const message = item.querySelector('.message');
+    
+            const author_allow = Setting.blockUser == '' ? false : new RegExp(Setting.blockUser.join('|')).test(author.innerText);
+            const text_allow = Setting.blockKeyword == '' ? false : new RegExp(Setting.blockKeyword.join('|')).test(message.innerText);
 
+            if(text_allow || author_allow) {
+                author.innerText = '차단됨';
+                message.innerText = '차단된 댓글입니다.';
+                if(message) message.style = 'background-color: rgb(200, 200, 200)';
+            }
+        });
+    });
+}
+
+function applyBoardBlock() {
+    document.addEventListener('DOMContentLoaded', () => {
+        const board = document.querySelector('.included-article-list, .board-article-list');
+        const articles = board.querySelectorAll('a[class="vrow"]');
+    
+        articles.forEach((item) => {
+            const title = item.querySelector('.col-title');
+            const author = item.querySelector('.col-author');
+            const preview = item.querySelector('.vrow-preview');
+    
+            const title_allow = Setting.blockKeyword == '' ? false : new RegExp(Setting.blockKeyword.join('|')).test(title.innerText);
+            const author_allow = Setting.blockUser == '' ? false : new RegExp(Setting.blockUser.join('|')).test(author.innerText);
+
+            if(title_allow || author_allow) {
+                item.setAttribute('data-url', item.href);
+                item.removeAttribute('href');
+                item.style = 'background-color: rgb(200, 200, 200)';
+                title.innerText = '차단된 게시물입니다.';
+                author.innerText = '차단됨';
+                if(preview) preview.style = 'display: none';
+            }
+        });
+    });
+}
 // #endregion
 
 // #region Setting
@@ -1106,8 +1149,21 @@ function addSettingMenu() {
                 Setting.filteredCategory[channel][item.id] = $(item).is(':checked');
             });
 
-            Setting.blockUser = $('.script-setting-wrapper #blockUser').val().split('\n');
-            Setting.blockKeyword = $('.script-setting-wrapper #blockKeyword').val().split('\n');
+            let blockUser = $('.script-setting-wrapper #blockUser').val();
+            if(blockUser == "") {
+                Setting.blockUser = [];
+            }
+            else {
+                Setting.blockUser = blockUser.split('\n');
+            }
+
+            let blockKeyword = $('.script-setting-wrapper #blockKeyword').val();
+            if(blockKeyword == "") {
+                Setting.blockKeyword = [];
+            }
+            else {
+                Setting.blockKeyword = blockKeyword.split('\n');
+            }
 
             saveSetting();
             location.reload();
@@ -1176,11 +1232,14 @@ function initBoard(isArticleView) {
         if(Setting.hideContentImage) hideContentImage();
         addReplyRefreshBtn();
         applyImageMenu();
+        applyCommentBlock();
     }
 
     initRefresher();
     applyHideNotice();
     applyPreviewFilter();
+
+    applyBoardBlock();
 }
 
 function initWrite(isEditView) {
