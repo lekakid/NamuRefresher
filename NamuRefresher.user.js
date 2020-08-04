@@ -200,6 +200,7 @@ function refreshArticle(data) {
     });
 
     applyPreviewFilter();
+    applyBoardBlock();
 }
 
 function initRefresher() {
@@ -243,6 +244,7 @@ function tryRefreshComment() {
         success: (data) => {
             comment_requeset = null;
             refreshComment(data);
+            applyCommentBlock();
         },
         error: () => {
             comment_requeset = null;
@@ -553,7 +555,6 @@ function applyPreviewFilter() {
         }
     });
 }
-
 // #endregion
 
 // #region Fixed Header
@@ -769,6 +770,49 @@ function applyImageMenu() {
 }
 // #endregion
 
+// #region Content Block
+function applyCommentBlock() {
+    const articles = document.querySelectorAll('.comment-item');
+
+    articles.forEach((item) => {
+        const author = item.querySelector('.user-info');
+        const message = item.querySelector('.message');
+
+        const author_allow = Setting.blockUser == '' ? false : new RegExp(Setting.blockUser.join('|')).test(author.innerText);
+        const text_allow = Setting.blockKeyword == '' ? false : new RegExp(Setting.blockKeyword.join('|')).test(message.innerText);
+
+        if(text_allow || author_allow) {
+            author.innerText = '차단됨';
+            message.innerText = '차단된 댓글입니다.';
+            if(message) message.style = 'background-color: rgb(200, 200, 200)';
+        }
+    });
+}
+
+function applyBoardBlock() {
+    const board = document.querySelector('.included-article-list, .board-article-list');
+    const articles = board.querySelectorAll('a[class="vrow"]');
+
+    articles.forEach((item) => {
+        const title = item.querySelector('.col-title');
+        const author = item.querySelector('.col-author');
+        const preview = item.querySelector('.vrow-preview');
+
+        const title_allow = Setting.blockKeyword == '' ? false : new RegExp(Setting.blockKeyword.join('|')).test(title.innerText);
+        const author_allow = Setting.blockUser == '' ? false : new RegExp(Setting.blockUser.join('|')).test(author.innerText);
+
+        if(title_allow || author_allow) {
+            item.setAttribute('data-url', item.href);
+            item.removeAttribute('href');
+            item.style = 'background-color: rgb(200, 200, 200)';
+            title.innerText = '차단된 게시물입니다.';
+            author.innerText = '차단됨';
+            if(preview) preview.style = 'display: none';
+        }
+    });
+}
+// #endregion
+
 // #region Setting
 const SETTNG_BUTTON_NAME = '스크립트 설정';
 const SETTING_HEADER = '아카 리프레셔 (Arca Refresher) 설정';
@@ -786,7 +830,9 @@ let Setting = {
     hideAvatar: true,
     hideContentImage: false,
     myImage: '',
-    filteredCategory: {}
+    filteredCategory: {},
+    blockKeyword: [],
+    blockUser: []
 }
 
 const SettingInfo = {
@@ -813,6 +859,14 @@ const SettingInfo = {
     filteredCategory: {
         name: '카테고리 미리보기 숨기기',
         description: '체크한 카테고리의 미리보기를 표시하지 않습니다.'
+    },
+    blockUser: {
+        name: '이용자 차단',
+        description: '작성한 키워드를 포함하는 닉네임을 가진 인원이 쓴 글과 댓글을 표시하지 않습니다.'
+    },
+    blockKeyword: {
+        name: '키워드 차단',
+        description: '작성한 키워드가 포함된 제목의 글, 댓글을 표시하지 않습니다.'
     }
 }
 
@@ -895,7 +949,8 @@ const SETTING_CSS = `
         padding: 1rem;
     }
 
-    .script-setting-wrapper select {
+    .script-setting-wrapper select,
+    .script-setting-wrapper textarea {
         display: block;
         width: 100%;
         padding: .5rem .75rem;
@@ -1007,14 +1062,28 @@ function addSettingMenu() {
                                         <p class="text-muted">${SettingInfo.filteredCategory.description}</p>
                                     </div>
                                 </div>
-                                <div class="row">
-                                    <div class="col-xs-6">
-                                        <a href="#" id="resetSetting" class="btn btn-danger">설정 초기화</a>
-                                    </div>
-                                    <div class="col-xs-6 align-right">
-                                        <a href="#" id="saveAndClose" class="btn btn-primary">저장</a>
-                                        <a href="#" id="closeSetting" class="btn btn-success">닫기</a>
-                                    </div>
+                            </div>
+                            <div class="row">
+                                <label class="col-xs-3">${SettingInfo.blockUser.name}</label>
+                                <div class="col-xs-9">
+                                    <textarea id="blockUser" rows="6" placeholder="차단할 이용자의 닉네임을 입력, 줄바꿈으로 구별합니다."></textarea>
+                                    <p class="text-muted">${SettingInfo.blockUser.description}</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <label class="col-xs-3">${SettingInfo.blockKeyword.name}</label>
+                                <div class="col-xs-9">
+                                    <textarea id="blockKeyword" rows="6" placeholder="차단할 키워드를 입력, 줄바꿈으로 구별합니다."></textarea>
+                                    <p class="text-muted">${SettingInfo.blockKeyword.description}</p>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-xs-6">
+                                    <a href="#" id="resetSetting" class="btn btn-danger">설정 초기화</a>
+                                </div>
+                                <div class="col-xs-6 align-right">
+                                    <a href="#" id="saveAndClose" class="btn btn-primary">저장</a>
+                                    <a href="#" id="closeSetting" class="btn btn-success">닫기</a>
                                 </div>
                             </div>
                         </div>
@@ -1077,6 +1146,22 @@ function addSettingMenu() {
                 Setting.filteredCategory[channel][item.id] = $(item).is(':checked');
             });
 
+            let blockUser = $('.script-setting-wrapper #blockUser').val();
+            if(blockUser == "") {
+                Setting.blockUser = [];
+            }
+            else {
+                Setting.blockUser = blockUser.split('\n');
+            }
+
+            let blockKeyword = $('.script-setting-wrapper #blockKeyword').val();
+            if(blockKeyword == "") {
+                Setting.blockKeyword = [];
+            }
+            else {
+                Setting.blockKeyword = blockKeyword.split('\n');
+            }
+
             saveSetting();
             location.reload();
         });
@@ -1098,6 +1183,9 @@ function applySettingView() {
         if(Setting.filteredCategory[channel][key])
             $(`.category-group input#${$.escapeSelector(key)}`).prop('checked', 'checked');
     }
+
+    $('.script-setting-wrapper #blockUser').text(Setting.blockUser.join('\n'));
+    $('.script-setting-wrapper #blockKeyword').text(Setting.blockKeyword.join('\n'));
 }
 // #endregion
 
@@ -1141,11 +1229,17 @@ function initBoard(isArticleView) {
         if(Setting.hideContentImage) hideContentImage();
         addReplyRefreshBtn();
         applyImageMenu();
+        document.addEventListener('DOMContentLoaded', () => {
+            applyCommentBlock();
+        });
     }
 
     initRefresher();
     applyHideNotice();
     applyPreviewFilter();
+    document.addEventListener('DOMContentLoaded', () => {
+        applyBoardBlock();
+    });
 }
 
 function initWrite(isEditView) {
