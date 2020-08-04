@@ -1099,6 +1099,7 @@ function applySettingView() {
 }
 // #endregion
 
+// #region Initilize
 var channel = null;
 async function initialize() {
     addCSS(HEADER_CSS);
@@ -1153,5 +1154,6 @@ function initWrite(isEditView) {
 
     applyAdvancedImgUploader();
 }
+// #endregion
 
 initialize();
