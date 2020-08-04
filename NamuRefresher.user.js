@@ -1026,14 +1026,14 @@ function addSettingMenu() {
                             <div class="row">
                                 <label class="col-xs-3">${SettingInfo.blockUser.name}</label>
                                 <div class="col-xs-9">
-                                    <textarea id="block-user" rows="6" placeholder="차단할 이용자의 닉네임을 입력, 줄바꿈으로 구별합니다."></textarea>
+                                    <textarea id="blockUser" rows="6" placeholder="차단할 이용자의 닉네임을 입력, 줄바꿈으로 구별합니다."></textarea>
                                     <p class="text-muted">${SettingInfo.blockUser.description}</p>
                                 </div>
                             </div>
                             <div class="row">
                                 <label class="col-xs-3">${SettingInfo.blockKeyword.name}</label>
                                 <div class="col-xs-9">
-                                    <textarea id="block-keyword" rows="6" placeholder="차단할 키워드를 입력, 줄바꿈으로 구별합니다."></textarea>
+                                    <textarea id="blockKeyword" rows="6" placeholder="차단할 키워드를 입력, 줄바꿈으로 구별합니다."></textarea>
                                     <p class="text-muted">${SettingInfo.blockKeyword.description}</p>
                                 </div>
                             </div>
@@ -1106,6 +1106,9 @@ function addSettingMenu() {
                 Setting.filteredCategory[channel][item.id] = $(item).is(':checked');
             });
 
+            Setting.blockUser = $('.script-setting-wrapper #blockUser').val().split('\n');
+            Setting.blockKeyword = $('.script-setting-wrapper #blockKeyword').val().split('\n');
+
             saveSetting();
             location.reload();
         });
@@ -1127,6 +1130,9 @@ function applySettingView() {
         if(Setting.filteredCategory[channel][key])
             $(`.category-group input#${$.escapeSelector(key)}`).prop('checked', 'checked');
     }
+
+    $('.script-setting-wrapper #blockUser').text(Setting.blockUser.join('\n'));
+    $('.script-setting-wrapper #blockKeyword').text(Setting.blockKeyword.join('\n'));
 }
 // #endregion
 
