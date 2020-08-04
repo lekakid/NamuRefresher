@@ -1,7 +1,8 @@
 // ==UserScript==
 // @name        NamuRefresher
+// @icon        https://image.flaticon.com/icons/svg/929/929614.svg
 // @author      LeKAKiD
-// @version     1.9.5
+// @version     1.10.0
 // @include     https://arca.live/*
 // @include     https://*.arca.live/*
 // @run-at      document-start
@@ -14,6 +15,8 @@
 // @grant       GM.setValue
 // @grant       GM.xmlHttpRequest
 // ==/UserScript==
+const UNSUPPORTED_VERSION = '1.5.2';
+const COMPATIBLE_VERSION = '1.10.0';
 
 // #region Utility
 function getTimeString(datetime) {
@@ -109,16 +112,16 @@ const LOADER_CSS = `
 function initLoader() {
     removeLoader();
     $('.root-container').append('<div id="article_loader"></div>');
-    setLoader();
+    playLoaderAnimation();
 }
 
-function setLoader() {
+function playLoaderAnimation() {
     var loader = $('#article_loader');
 
     if (loader) {
         loader.removeAttr('style');
         setTimeout(function() {
-            loader.css('animation', 'loaderspin ' + Setting.refreshTime.value + 's ease-in-out');
+            loader.css('animation', 'loaderspin ' + Setting.refreshTime + 's ease-in-out');
         }, 50);
     }
 }
@@ -130,7 +133,7 @@ function removeLoader() {
 var loader_loop = null;
 function startArticleRefresh() {
     initLoader();
-    loader_loop = setInterval(tryRefreshArticle, Setting.refreshTime.value * 1000);
+    loader_loop = setInterval(getNewArticle, Setting.refreshTime * 1000);
 }
 
 function stopArticleRefresh() {
@@ -139,7 +142,7 @@ function stopArticleRefresh() {
 }
 
 var current_request = null;
-function tryRefreshArticle() {
+function getNewArticle() {
     if(current_request !== null) {
         current_request.abort();
         initLoader();
@@ -152,30 +155,12 @@ function tryRefreshArticle() {
         dataType: "html",
         success: (data) => {
             current_request = null;
-            setLoader();
+            playLoaderAnimation();
             refreshArticle(data);
         },
         error: () => {
             current_request = null;
             console.log("AJAX Request Failed");
-        }
-    });
-}
-
-function initRefresher() {
-    if(loader_loop !== null) {
-        stopArticleRefresh();
-    }
-
-    startArticleRefresh();
-
-    document.addEventListener("visibilitychange", () => {
-        if (document.hidden) {
-            stopArticleRefresh();
-        } else {
-            if (loader_loop === null && Setting.refreshTime.value) {
-                $(document).ready(startArticleRefresh);
-            }
         }
     });
 }
@@ -215,6 +200,32 @@ function refreshArticle(data) {
     });
 
     applyPreviewFilter();
+    applyBoardBlock();
+}
+
+function initRefresher() {
+    if(Setting.refreshTime == 0)
+        return;
+
+    addCSS(LOADER_CSS);
+
+    $(document).ready(function() {
+        if(loader_loop != null) {
+            stopArticleRefresh();
+        }
+        
+        startArticleRefresh();
+        
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden) {
+                stopArticleRefresh();
+            } else {
+                if (loader_loop == null) {
+                    startArticleRefresh();
+                }
+            }
+        });
+    });
 }
 // #endregion
 
@@ -233,6 +244,7 @@ function tryRefreshComment() {
         success: (data) => {
             comment_requeset = null;
             refreshComment(data);
+            applyCommentBlock();
         },
         error: () => {
             comment_requeset = null;
@@ -248,26 +260,21 @@ function refreshComment(data) {
     $('.article-comment time').each(function(index, item) {
         $(item).text(getFullDateString($(item).attr('datetime')));
     });
-
-    if(Setting.hideAvatar.value)
-        hideAvatar();
 }
 
-function applyReplyRefreshBtn() {
+function addReplyRefreshBtn() {
     var btn = '<span>　</span><a class="btn btn-success" href="#"><span class="icon ion-android-refresh"></span> 새로고침</a>';
 
-    if($('.article-comment').length == 0)
-        return;
+    $(document).ready(function() {    
+        function onClickReplyRefresh() {
+            tryRefreshComment();
+            return false;
+        }
 
-    $(btn).insertAfter('.article-comment .title a').click(onClickReplyRefresh);
-    $(btn).appendTo('.article-comment .write-area .subtitle').click(onClickReplyRefresh);
+        $(btn).insertAfter('.article-comment .title a').click(onClickReplyRefresh);
+        $(btn).appendTo('.article-comment .write-area .subtitle').click(onClickReplyRefresh);
+    });
 }
-
-function onClickReplyRefresh() {
-    tryRefreshComment();
-    return false;
-}
-
 // #endregion
 
 // #region Hide Notice
@@ -290,30 +297,6 @@ const HIDE_NOTICE_BUTTON_CSS = `
     }
 `;
 var hide_notice_style = null;
-function applyHideNotice() {
-    addCSS(HIDE_NOTICE_BUTTON_CSS);
-    var hide_btn = $('<a class="vrow hide-notice-button" href="#"><div class="">공지사항 숨기기 ▲</div></a>').insertAfter($('.vrow.notice').last());
-    hide_btn.click(function() {
-        if(Setting.hideNotice.value) {
-            showNotice();
-            hide_btn.text('공지사항 숨기기 ▲');
-        }
-        else {
-            hideNotice();
-            hide_btn.text('공지사항 펼치기 ▼');
-        }
-
-        Setting.hideNotice.value = !Setting.hideNotice.value;
-        saveSetting();
-        return false;
-    });
-
-    if(Setting.hideNotice.value) {
-        hideNotice();
-        hide_btn.text('공지사항 펼치기 ▼');
-    }
-}
-
 function hideNotice() {
     if(hide_notice_style == null)
         hide_notice_style = addCSS(HIDE_NOTICE_CSS);
@@ -324,6 +307,39 @@ function hideNotice() {
 function showNotice() {
     if(hide_notice_style != null)
         hide_notice_style.remove();
+}
+
+function applyHideNotice() {
+    addCSS(HIDE_NOTICE_BUTTON_CSS);
+
+    var hide_btn = $(`
+                        <a class="vrow hide-notice-button" href="#">
+                            <div class="">공지사항 숨기기 ▲</div>
+                        </a>
+                    `);
+
+    if(Setting.hideNotice) {
+        hideNotice();
+        hide_btn.text('공지사항 펼치기 ▼');
+    }
+
+    $(document).ready(function() {
+        hide_btn.insertAfter($('.vrow.notice').last());
+        hide_btn.click(function() {
+            if(Setting.hideNotice) {
+                showNotice();
+                hide_btn.text('공지사항 숨기기 ▲');
+            }
+            else {
+                hideNotice();
+                hide_btn.text('공지사항 펼치기 ▼');
+            }
+
+            Setting.hideNotice = !Setting.hideNotice;
+            saveSetting();
+            return false;
+        });
+    });
 }
 // #endregion
 
@@ -373,7 +389,7 @@ function showContentImage() {
 
 // #region Set My Posting Image
 function applyMyImage() {
-    if(Setting.myImage.value == '')
+    if(Setting.myImage == '')
         return;
 
     var observer = new MutationObserver((mutations) => {
@@ -381,7 +397,7 @@ function applyMyImage() {
             if(m.target.className == 'note-editable') {
                 observer.disconnect();
                 
-                unsafeWindow.summernote.summernote('insertNode', $(Setting.myImage.value)[0]);
+                unsafeWindow.summernote.summernote('insertNode', $(Setting.myImage)[0]);
                 break;
             }
         }
@@ -468,7 +484,12 @@ function doUpload(files, count, total) {
     }
 
     if(count == 0) {
-        $('<div id="progress" style="width:100%;height:20px;background-color:#e2e2e2;position:relative"><div style="position:absolute;width:100%;text-align:center;font-weight:bold;color:#FFF">이미지 업로드 중...</div><div id="progressBar" style="background-color:#00b3a1;height:100%;width:0%;text-align:center;"></div></div>').insertBefore("#content");
+        $(`
+            <div id="progress" style="width:100%;height:20px;background-color:#e2e2e2;position:relative">
+                <div style="position:absolute;width:100%;text-align:center;font-weight:bold;color:#FFF">이미지 업로드 중...</div>
+                <div id="progressBar" style="background-color:#00b3a1;height:100%;width:0%;text-align:center;"></div>
+            </div>
+        `).insertBefore("#content");
     }
     var progressBar = $("#progressBar");
 
@@ -521,11 +542,7 @@ const HIDE_PREVIEW_CSS = `
         display:none;
     }
 `;
-var hide_preview_style = null;
 function applyPreviewFilter() {
-    if(hide_preview_style == null)
-        hide_preview_style = addCSS(HIDE_PREVIEW_CSS);
-
     article_list.children().each(function(index, item) {
         var tag = $(item).find('span.tag').text();
         tag = (tag == "") ? "일반" : tag;
@@ -538,7 +555,6 @@ function applyPreviewFilter() {
         }
     });
 }
-
 // #endregion
 
 // #region Fixed Header
@@ -617,132 +633,182 @@ const CONTEXT_MENU_CSS = `
         text-decoration: none;
     }
 `;
+const COPY_IMAGE = '원본 이미지 클립보드에 복사';
+const SAVE_IMAGE = '원본 이미지 저장';
+const SAVE_VIDEO = '원본 동영상 저장';
 const SET_MY_IMAGE = '선택한 짤을 저장했습니다.\n다음에 게시물 작성 시 게시물 상단에 자동으로 추가됩니다.';
+const CONNECTION_ABORT = '서버 연결 거부';
+const ON_ERROR = '오류 발생';
 function applyImageMenu() {
     addCSS(CONTEXT_MENU_CSS);
 
-    var context_menu_image = $(`
-        <div class="image-context-wrapper">
-            <div class="image-context-menu" data-url="" data-html="">
-                <a href="#" onclick="return false;" class="list-item context-copyimage">원본 이미지 클립보드에 복사</a>
-                <a href="#" onclick="return false;" class="list-item context-saveimage">짤 저장</a>
-                <a href="#" onclick="return false;" class="list-item context-copyurl">짤 주소 복사</a>
-                <a href="#" onclick="return false;" class="list-item context-applymyimage">자짤로 등록</a>
-                <div class="context-search-wrapper">
-                    <div class="list-devider"></div>
-                    <a href="" class="list-item context-search-google" target="_blank">구글 검색</a>
-                    <a href="" class="list-item context-search-yandex" target="_blank">Yandex 검색</a>
-                    <a href="" class="list-item context-search-iqdb" target="_blank">IQDB 검색</a>
-                    <a href="" class="list-item context-search-saucenao" target="_blank">SauceNao 검색</a>
+    $(document).ready(function() {
+        var context_menu_image = $(`
+            <div class="image-context-wrapper">
+                <div class="image-context-menu" data-url="" data-html="">
+                    <a href="#" onclick="return false;" class="list-item context-copyimage">${COPY_IMAGE}</a>
+                    <a href="#" onclick="return false;" class="list-item context-saveimage">SAVE_SOMETHING</a>
+                    <a href="#" onclick="return false;" class="list-item context-copyurl">원본 주소 복사</a>
+                    <a href="#" onclick="return false;" class="list-item context-applymyimage">자짤로 등록</a>
+                    <div class="context-search-wrapper">
+                        <div class="list-devider"></div>
+                        <a href="" class="list-item context-search-google" target="_blank">구글 검색</a>
+                        <a href="" class="list-item context-search-yandex" target="_blank">Yandex 검색</a>
+                        <a href="" class="list-item context-search-iqdb" target="_blank">IQDB 검색</a>
+                        <a href="" class="list-item context-search-saucenao" target="_blank">SauceNao 검색</a>
+                    </div>
                 </div>
             </div>
-        </div>
-    `).appendTo('.root-container').hide();
-    context_menu_image.contextmenu(function() { return false; });
+        `).appendTo('.root-container').hide();
+        context_menu_image.contextmenu(function() { return false; });
 
-    if(window.outerWidth <= 768) {
-        context_menu_image.addClass('mobile');
-    }
-
-    function context_close_event() {
-        if(context_menu_image.css('display') != 'none') {
-            context_menu_image.hide();
-            return true;
-        }
-        return false;
-    }
-
-    $(document).click(function() {
-        context_close_event();
-        return true;
-    }).contextmenu(function() {
-        context_close_event();
-        return true;
-    });
-    document.addEventListener('scroll', context_close_event);
-    
-    $('.article-body img, .article-body video').contextmenu(function(e) {
-        if(context_close_event())
-            return true;
-
-        context_menu_image.find('.image-context-menu').attr('data-url', this.src);
-        context_menu_image.find('.image-context-menu').attr('data-html', this.outerHTML);
-        context_menu_image.find('.context-search-google').attr('href', `https://www.google.com/searchbyimage?safe=off&image_url=${this.src}`);
-        context_menu_image.find('.context-search-yandex').attr('href', `https://yandex.com/images/search?rpt=imageview&url=${this.src}`);
-        context_menu_image.find('.context-search-iqdb').attr('href', `https://iqdb.org/?url=${this.src}`);
-        context_menu_image.find('.context-search-saucenao').attr('href', `https://saucenao.com/search.php?db=999&dbmaski=32768&url=${this.src}`);
-
-        if(e.target.nodeName == 'IMG') {
-            $('.image-context-menu .context-copyimage').show();
-            $('.image-context-menu .context-saveimage').text('선택한 이미지 저장');
-            $('.image-context-menu .context-search-wrapper').show();
-        }
-        else {
-            $('.image-context-menu .context-copyimage').hide();
-            $('.image-context-menu .context-saveimage').text('선택한 동영상 저장');
-            $('.image-context-menu .context-search-wrapper').hide();
+        if(window.outerWidth <= 768) {
+            context_menu_image.addClass('mobile');
         }
 
-        if(!context_menu_image.hasClass('mobile')) {
-            context_menu_image.find('.image-context-menu').css('top', e.pageY + 3 - $(document).scrollTop());
-            context_menu_image.find('.image-context-menu').css('left', e.pageX + 3);
-        }
-        context_menu_image.fadeIn(200);
-        return false;
-    });
-
-    $('.context-copyimage').click(function() {
-        var url = $('.image-context-menu').attr('data-url') + '?type=orig';
-        GM.xmlHttpRequest({
-            method: 'GET',
-            url,
-            responseType: 'arraybuffer',
-            onprogress: function(event) {
-                $('.context-copyimage').text(`다운로드 중...(${Math.round(event.loaded / event.total * 100)}%)`);
-            },
-            onload: function(response) {
-                var buffer = response.response;
-                var blob = new Blob([buffer], {type: 'image/png'});
-                
-                var item = new ClipboardItem({[blob.type]: blob});
-                navigator.clipboard.write([item]);
-                context_close_event();
-                $('.context-copyimage').text('원본 이미지 클립보드에 복사');
-            },
-            onabort: function() {
-                alert('서버 연결 거부');
-            },
-            onerror: function() {
-                alert('오류 발생');
+        function context_close_event() {
+            if(context_menu_image.css('display') != 'none') {
+                context_menu_image.hide();
+                return true;
             }
-        });
-        return false;
-    });
-    
-    $('.context-saveimage').click(function() {
-        var url = $('.image-context-menu').attr('data-url') + '?type=orig';
-        GM.xmlHttpRequest({
-            method: 'GET',
-            url,
-            responseType: 'blob',
-            onload: function(response) {
-                var data = response.response;
-                
-                saveAs(data, url.substring(url.lastIndexOf('/'), url.indexOf('?')));
-            },
-            onabort: function() {
-                alert('서버 연결 거부');
-            },
-            onerror: function() {
-                alert('오류 발생');
-            }
-        });
-    });
+            return false;
+        }
 
-    $('.context-applymyimage').click(function() {
-        Setting.myImage.value = $('.image-context-menu').attr('data-html');
-        saveSetting();
-        alert(SET_MY_IMAGE);
+        $(document).click(function() {
+            context_close_event();
+            return true;
+        }).contextmenu(function() {
+            context_close_event();
+            return true;
+        });
+        document.addEventListener('scroll', context_close_event);
+        
+        $('.article-body img, .article-body video').contextmenu(function(e) {
+            if(context_close_event())
+                return true;
+
+            context_menu_image.find('.image-context-menu').attr('data-url', this.src);
+            context_menu_image.find('.image-context-menu').attr('data-html', this.outerHTML);
+            context_menu_image.find('.context-search-google').attr('href', `https://www.google.com/searchbyimage?safe=off&image_url=${this.src}`);
+            context_menu_image.find('.context-search-yandex').attr('href', `https://yandex.com/images/search?rpt=imageview&url=${this.src}`);
+            context_menu_image.find('.context-search-iqdb').attr('href', `https://iqdb.org/?url=${this.src}`);
+            context_menu_image.find('.context-search-saucenao').attr('href', `https://saucenao.com/search.php?db=999&dbmaski=32768&url=${this.src}`);
+
+            if(e.target.nodeName == 'IMG') {
+                $('.image-context-menu .context-copyimage').show();
+                $('.image-context-menu .context-saveimage').text(SAVE_IMAGE);
+                $('.image-context-menu .context-search-wrapper').show();
+            }
+            else {
+                $('.image-context-menu .context-copyimage').hide();
+                $('.image-context-menu .context-saveimage').text(SAVE_VIDEO);
+                $('.image-context-menu .context-search-wrapper').hide();
+            }
+
+            if(!context_menu_image.hasClass('mobile')) {
+                context_menu_image.find('.image-context-menu').css('top', e.pageY + 3 - $(document).scrollTop());
+                context_menu_image.find('.image-context-menu').css('left', e.pageX + 3);
+            }
+            context_menu_image.fadeIn(200);
+            return false;
+        });
+
+        $('.context-copyimage').click(function() {
+            var url = $('.image-context-menu').attr('data-url') + '?type=orig';
+            GM.xmlHttpRequest({
+                method: 'GET',
+                url,
+                responseType: 'arraybuffer',
+                onprogress: function(event) {
+                    $('.context-copyimage').text(`다운로드 중...(${Math.round(event.loaded / event.total * 100)}%)`);
+                },
+                onload: function(response) {
+                    var buffer = response.response;
+                    var blob = new Blob([buffer], {type: 'image/png'});
+                    
+                    var item = new ClipboardItem({[blob.type]: blob});
+                    navigator.clipboard.write([item]);
+                    context_close_event();
+                    $('.context-copyimage').text(COPY_IMAGE);
+                },
+                onabort: function() {
+                    alert(CONNECTION_ABORT);
+                },
+                onerror: function() {
+                    alert(ON_ERROR);
+                }
+            });
+            return false;
+        });
+        
+        $('.context-saveimage').click(function() {
+            var url = $('.image-context-menu').attr('data-url') + '?type=orig';
+            GM.xmlHttpRequest({
+                method: 'GET',
+                url,
+                responseType: 'blob',
+                onload: function(response) {
+                    var data = response.response;
+                    
+                    saveAs(data, url.substring(url.lastIndexOf('/'), url.indexOf('?')));
+                },
+                onabort: function() {
+                    alert(CONNECTION_ABORT);
+                },
+                onerror: function() {
+                    alert(ON_ERROR);
+                }
+            });
+        });
+
+        $('.context-applymyimage').click(function() {
+            Setting.myImage = $('.image-context-menu').attr('data-html');
+            saveSetting();
+            alert(SET_MY_IMAGE);
+        });
+    });
+}
+// #endregion
+
+// #region Content Block
+function applyCommentBlock() {
+    const articles = document.querySelectorAll('.comment-item');
+
+    articles.forEach((item) => {
+        const author = item.querySelector('.user-info');
+        const message = item.querySelector('.message');
+
+        const author_allow = Setting.blockUser == '' ? false : new RegExp(Setting.blockUser.join('|')).test(author.innerText);
+        const text_allow = Setting.blockKeyword == '' ? false : new RegExp(Setting.blockKeyword.join('|')).test(message.innerText);
+
+        if(text_allow || author_allow) {
+            author.innerText = '차단됨';
+            message.innerText = '차단된 댓글입니다.';
+            if(message) message.style = 'background-color: rgb(200, 200, 200)';
+        }
+    });
+}
+
+function applyBoardBlock() {
+    const board = document.querySelector('.included-article-list, .board-article-list');
+    const articles = board.querySelectorAll('a[class="vrow"]');
+
+    articles.forEach((item) => {
+        const title = item.querySelector('.col-title');
+        const author = item.querySelector('.col-author');
+        const preview = item.querySelector('.vrow-preview');
+
+        const title_allow = Setting.blockKeyword == '' ? false : new RegExp(Setting.blockKeyword.join('|')).test(title.innerText);
+        const author_allow = Setting.blockUser == '' ? false : new RegExp(Setting.blockUser.join('|')).test(author.innerText);
+
+        if(title_allow || author_allow) {
+            item.setAttribute('data-url', item.href);
+            item.removeAttribute('href');
+            item.style = 'background-color: rgb(200, 200, 200)';
+            title.innerText = '차단된 게시물입니다.';
+            author.innerText = '차단됨';
+            if(preview) preview.style = 'display: none';
+        }
     });
 }
 // #endregion
@@ -757,77 +823,121 @@ const SETTING_RESET_CONFIRM = '모든 설정이 초기화 됩니다. 계속하�
 const USE = '사용';
 const UNUSE = '사용 안 함';
 
-var Setting = {
+let Setting = {
     version: GM.info.script.version,
+    refreshTime: 5,
+    hideNotice: false,
+    hideAvatar: true,
+    hideContentImage: false,
+    myImage: '',
+    filteredCategory: {},
+    blockKeyword: [],
+    blockUser: []
+}
+
+const SettingInfo = {
     refreshTime: {
         name: '게시물 자동 새로고침',
-        description: '일정 시간마다 자동으로 게시물 목록을 갱신합니다.',
-        default: 5,
-        value: 5,
-        range: [0, 3, 5, 10]
+        description: '일정 시간마다 자동으로 게시물 목록을 갱신합니다.'
     },
     hideNotice: {
         name: '공지사항 숨기기',
-        description: '상단 공지사항을 제거해줍니다.',
-        default: false,
-        value: false
+        description: '상단 공지사항을 제거해줍니다.'
     },
     hideAvatar: {
         name: '프로필 아바타 숨기기',
-        description: '게시물 조회 시 이용자 옆 프로필 이미지를 제거합니다.',
-        default: true,
-        value: true
+        description: '게시물 조회 시 이용자 옆 프로필 이미지를 제거합니다.'
     },
     hideContentImage: {
-        name: '본문 이미지 숨기기',
-        description: '게시물 조회 시 본문 이미지를 숨깁니다.',
-        default: false,
-        value: false
+        name: '본문 미디어 컨텐츠 숨기기',
+        description: '게시물 조회 시 본문의 이미지, 동영상을 제거합니다.'
     },
     myImage: {
         name: '등록한 자짤 삭제',
-        description: '등록한 자짤을 삭제합니다.',
-        default: '',
-        value: ''
+        description: '등록한 자짤을 삭제합니다.'
     },
     filteredCategory: {
         name: '카테고리 미리보기 숨기기',
-        description: '체크한 카테고리의 미리보기를 표시하지 않습니다.',
-        default: {
-            '전체': false,
-            '일반': false
-        }
+        description: '체크한 카테고리의 미리보기를 표시하지 않습니다.'
+    },
+    blockUser: {
+        name: '이용자 차단',
+        description: '작성한 키워드를 포함하는 닉네임을 가진 인원이 쓴 글과 댓글을 표시하지 않습니다.'
+    },
+    blockKeyword: {
+        name: '키워드 차단',
+        description: '작성한 키워드가 포함된 제목의 글, 댓글을 표시하지 않습니다.'
     }
 }
 
+const DefaultCategory = {
+    '전체': false,
+    '일반': false
+}
+
+function compareVersion(saved_data, criteria) {
+    if(saved_data == null || saved_data.version == undefined)
+        return true;
+    
+    var a = saved_data.version.split('.');
+    var b = criteria.split('.');
+
+    var c = 0;
+    for(i = 0; i < a.length; i++) {
+        if(parseInt(a[i]) > parseInt(b[i])) 
+            break;
+        else if(parseInt(a[i]) < parseInt(b[i]))
+            return true;
+    }
+
+    return false;
+}
+
+function convertSetting(LoadedSetting) {
+    const NewSetting = Object.assign({}, Setting);
+    NewSetting.refreshTime = LoadedSetting.refreshTime.value;
+    NewSetting.hideNotice = LoadedSetting.hideNotice.value;
+    NewSetting.hideAvatar = LoadedSetting.hideAvatar.value;
+    NewSetting.hideContentImage = LoadedSetting.hideContentImage.value;
+    NewSetting.myImage = LoadedSetting.myImage.value;
+
+    const tmp = {};
+    for(key in LoadedSetting.filteredCategory) {
+        if(key == 'name' || key == 'description')
+            continue;
+
+        tmp[key] = Object.assign({}, LoadedSetting.filteredCategory[key]);
+    }
+
+    NewSetting.filteredCategory = tmp;
+
+    return NewSetting;
+}
+
 async function loadSetting() {
-    var setting_str = await GM.getValue('Setting', '');
-    if(setting_str == '') {
-        Setting.filteredCategory[channel] = $.extend({}, Setting.filteredCategory.default);
-        return;
-    }
+    const LoadedSetting = JSON.parse(await GM.getValue('Setting', 'null'));
 
-    Setting = JSON.parse(setting_str);
-
-    if(Setting.filteredCategory[channel] == undefined) {
-        Setting.filteredCategory[channel] = $.extend({}, Setting.filteredCategory.default);
+    if(compareVersion(LoadedSetting, UNSUPPORTED_VERSION))
         return;
+
+    if(compareVersion(LoadedSetting, COMPATIBLE_VERSION)) {
+        Setting = convertSetting(LoadedSetting);
+        saveSetting();
     }
+    else {
+        Setting = Object.assign(Setting, LoadedSetting);
+    
+    }
+    if(Setting.filteredCategory[channel] == undefined)
+        Setting.filteredCategory[channel] = Object.assign({}, DefaultCategory);
 }
 
 async function saveSetting() {
     await GM.setValue('Setting', JSON.stringify(Setting));
 }
 
-function resetSetting() {
-    Setting.version = GM.info.script.version;
-    Setting.refreshTime.value = Setting.refreshTime.default;
-    Setting.hideNotice.value = Setting.hideNotice.default;
-    Setting.hideAvatar.value = Setting.hideAvatar.default;
-    Setting.hideContentImage.value = Setting.hideContentImage.default;
-    Setting.myImage.value = Setting.myImage.default;
-    Setting.filteredCategory[channel] = $.extend({}, Setting.filteredCategory.default);
-    saveSetting();
+async function resetSetting() {
+    await GM.setValue('Setting', '');
 }
 
 const SETTING_CSS = `
@@ -839,7 +949,8 @@ const SETTING_CSS = `
         padding: 1rem;
     }
 
-    .script-setting-wrapper select {
+    .script-setting-wrapper select,
+    .script-setting-wrapper textarea {
         display: block;
         width: 100%;
         padding: .5rem .75rem;
@@ -873,79 +984,97 @@ const SETTING_CSS = `
         text-align: right;
     }
 `;
-function addNewSettingMenu() {
-    var nav = $('ul.navbar-nav').first();
-    var menubtn = `
-        <li class="nav-item dropdown">
-            <a aria-expanded="false" class="nav-link" href="#">
-            <span class="hidden-sm-down">${SETTNG_BUTTON_NAME}</span>
-            <span class="hidden-md-up"><span class="ion-gear-a"></span></span>
-            </a>
-        </li>`;
-    $(menubtn).appendTo(nav).click(function () {
-        if($('.script-setting-wrapper').css('display') != 'none')
+function addSettingMenu() {
+    addCSS(SETTING_CSS);
+
+    $(document).ready(function() {
+        var nav = $('ul.navbar-nav').first();
+        var menubtn = `
+            <li class="nav-item dropdown">
+                <a aria-expanded="false" class="nav-link" href="#">
+                <span class="hidden-sm-down">${SETTNG_BUTTON_NAME}</span>
+                <span class="hidden-md-up"><span class="ion-gear-a"></span></span>
+                </a>
+            </li>`;
+        $(menubtn).appendTo(nav).click(function () {
+            if($('.script-setting-wrapper').css('display') != 'none')
+                return false;
+
+            applySettingView();
+
+            $('.content-wrapper').fadeOut(200, function() {
+                $('.script-setting-wrapper').fadeIn(200);
+            });
             return false;
-
-        applySettingView();
-
-        $('.content-wrapper').fadeOut(200, function() {
-            $('.script-setting-wrapper').fadeIn(200);
         });
-        return false;
-    });
 
-    var menu_wrapper = `
-        <div class="script-setting-wrapper clearfix">
-            <div class="row">
-                <div class="col-sm-0 col-md-2"></div>
-                <div class="col-sm-12 col-md-8">
-                    <div class="dialog card">
-                        <div calss="card-block">
-                            <h4 class="card-title">${SETTING_HEADER}</h4>
-                            <div class="row">
-                                <label class="col-xs-3">${Setting.refreshTime.name}</label>
-                                <div class="col-xs-9">
-                                    <select id="useRefresh">
-                                        <option value="0">사용 안 함</option>
-                                        <option value="3">3초</option>
-                                        <option value="5">5초</option>
-                                        <option value="10">10초</option>
-                                    </select>
-                                    <p class="text-muted">${Setting.refreshTime.description}</p>
+        var menu_wrapper = `
+            <div class="script-setting-wrapper clearfix">
+                <div class="row">
+                    <div class="col-sm-0 col-md-2"></div>
+                    <div class="col-sm-12 col-md-8">
+                        <div class="dialog card">
+                            <div calss="card-block">
+                                <h4 class="card-title">${SETTING_HEADER}</h4>
+                                <div class="row">
+                                    <label class="col-xs-3">${SettingInfo.refreshTime.name}</label>
+                                    <div class="col-xs-9">
+                                        <select id="useRefresh">
+                                            <option value="0">사용 안 함</option>
+                                            <option value="3">3초</option>
+                                            <option value="5">5초</option>
+                                            <option value="10">10초</option>
+                                        </select>
+                                        <p class="text-muted">${SettingInfo.refreshTime.description}</p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <label class="col-xs-3">${SettingInfo.hideAvatar.name}</label>
+                                    <div class="col-xs-9">
+                                        <select id="hideAvatar">
+                                            <option value="0">사용 안 함</option>
+                                            <option value="1">사용</option>
+                                        </select>
+                                        <p class="text-muted">${SettingInfo.hideAvatar.description}</p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <label class="col-xs-3">${SettingInfo.hideContentImage.name}</label>
+                                    <div class="col-xs-9">
+                                        <select id="hideContentImage">
+                                            <option value="0">사용 안 함</option>
+                                            <option value="1">사용</option>
+                                        </select>
+                                        <p class="text-muted">${SettingInfo.hideContentImage.description}</p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <label class="col-xs-3">${SettingInfo.myImage.name}</label>
+                                    <div class="col-xs-9">
+                                        <a href="#" id="removeMyImage" class="btn btn-success">삭제</a>
+                                        <p class="text-muted">${SettingInfo.myImage.description}</p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <label class="col-xs-3">${SettingInfo.filteredCategory.name}</label>
+                                    <div class="col-xs-9">
+                                        <div class="category-group"></div>
+                                        <p class="text-muted">${SettingInfo.filteredCategory.description}</p>
+                                    </div>
                                 </div>
                             </div>
                             <div class="row">
-                                <label class="col-xs-3">${Setting.hideAvatar.name}</label>
+                                <label class="col-xs-3">${SettingInfo.blockUser.name}</label>
                                 <div class="col-xs-9">
-                                    <select id="hideAvatar">
-                                        <option value="0">사용 안 함</option>
-                                        <option value="1">사용</option>
-                                    </select>
-                                    <p class="text-muted">${Setting.hideAvatar.description}</p>
+                                    <textarea id="blockUser" rows="6" placeholder="차단할 이용자의 닉네임을 입력, 줄바꿈으로 구별합니다."></textarea>
+                                    <p class="text-muted">${SettingInfo.blockUser.description}</p>
                                 </div>
                             </div>
                             <div class="row">
-                                <label class="col-xs-3">${Setting.hideContentImage.name}</label>
+                                <label class="col-xs-3">${SettingInfo.blockKeyword.name}</label>
                                 <div class="col-xs-9">
-                                    <select id="hideContentImage">
-                                        <option value="0">사용 안 함</option>
-                                        <option value="1">사용</option>
-                                    </select>
-                                    <p class="text-muted">${Setting.hideContentImage.description}</p>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <label class="col-xs-3">${Setting.myImage.name}</label>
-                                <div class="col-xs-9">
-                                    <a href="#" id="removeMyImage" class="btn btn-success">삭제</a>
-                                    <p class="text-muted">${Setting.myImage.description}</p>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <label class="col-xs-3">${Setting.filteredCategory.name}</label>
-                                <div class="col-xs-9">
-                                    <div class="category-group"></div>
-                                    <p class="text-muted">${Setting.filteredCategory.description}</p>
+                                    <textarea id="blockKeyword" rows="6" placeholder="차단할 키워드를 입력, 줄바꿈으로 구별합니다."></textarea>
+                                    <p class="text-muted">${SettingInfo.blockKeyword.description}</p>
                                 </div>
                             </div>
                             <div class="row">
@@ -961,95 +1090,111 @@ function addNewSettingMenu() {
                     </div>
                 </div>
             </div>
-        </div>
-    `;
-    $(menu_wrapper).insertAfter('.content-wrapper').hide();
+        `;
+        $(menu_wrapper).insertAfter('.content-wrapper').hide();
 
-    var category = $('.content-wrapper .board-category a');
-    var category_btn = `
-        <span>
-            <input type="checkbox" id="">
-            <label for=""></label>
-        </span>
-    `;
-    var general = $(category_btn);
-    general.find('input').attr('id', '전체');
-    general.find('label').attr('for', '전체');
-    general.find('label').text('전체');
-    general.appendTo('.category-group');
-    category.each(function(index, item) {
-        var data = $(item).text();
-        data = data == "전체" ? "일반" : data;
-        var btn = $(category_btn);
-        btn.find('input').attr('id', data);
-        btn.find('label').attr('for', data);
-        btn.find('label').text(data);
-        btn.appendTo('.category-group');
-    });
-
-    $('#removeMyImage').click(function() {
-        if(!confirm(REMOVE_MY_IMAGE_CONFIRM))
-            return false;
-
-        Setting.myImage.value = '';
-        saveSetting();
-        alert(REMOVE_MY_IMAGE_RESULT);
-    });
-
-    $('#resetSetting').click(function() {
-        if(!confirm(SETTING_RESET_CONFIRM))
-            return false;
-
-        resetSetting();
-        location.reload();
-        return false;
-    });
-
-    $('#saveAndClose').click(function() {
-        Setting.refreshTime.value = $('.script-setting-wrapper #useRefresh').val();
-        Setting.hideAvatar.value = $('.script-setting-wrapper #hideAvatar').val() == 1;
-        Setting.hideContentImage.value = $('.script-setting-wrapper #hideContentImage').val() == 1;
-
-        var category = $('.script-setting-wrapper .category-group input');
+        var category = $('.content-wrapper .board-category a');
+        var category_btn = `
+            <span>
+                <input type="checkbox" id="">
+                <label for=""></label>
+            </span>
+        `;
+        var general = $(category_btn);
+        general.find('input').attr('id', '전체');
+        general.find('label').attr('for', '전체');
+        general.find('label').text('전체');
+        general.appendTo('.category-group');
         category.each(function(index, item) {
-            if(Setting.filteredCategory[channel] == undefined) {
-                Setting.filteredCategory[channel] = $.extend({}, Setting.filteredCategory.default);
-            }
-            Setting.filteredCategory[channel][item.id] = $(item).is(':checked');
+            var data = $(item).text();
+            data = data == "전체" ? "일반" : data;
+            var btn = $(category_btn);
+            btn.find('input').attr('id', data);
+            btn.find('label').attr('for', data);
+            btn.find('label').text(data);
+            btn.appendTo('.category-group');
         });
 
-        saveSetting();
-        location.reload();
-    });
+        $('#removeMyImage').click(function() {
+            if(!confirm(REMOVE_MY_IMAGE_CONFIRM))
+                return false;
 
-    $('#closeSetting').click(function() {
-        $('.script-setting-wrapper').fadeOut(200, function() {
-            $('.content-wrapper').fadeIn(200);
+            Setting.myImage = '';
+            saveSetting();
+            alert(REMOVE_MY_IMAGE_RESULT);
+        });
+
+        $('#resetSetting').click(function() {
+            if(!confirm(SETTING_RESET_CONFIRM))
+                return false;
+
+            resetSetting();
+            location.reload();
+            return false;
+        });
+
+        $('#saveAndClose').click(function() {
+            Setting.refreshTime = $('.script-setting-wrapper #useRefresh').val();
+            Setting.hideAvatar = $('.script-setting-wrapper #hideAvatar').val() == 1;
+            Setting.hideContentImage = $('.script-setting-wrapper #hideContentImage').val() == 1;
+
+            var category = $('.script-setting-wrapper .category-group input');
+            category.each(function(index, item) {
+                if(Setting.filteredCategory[channel] == undefined) {
+                    Setting.filteredCategory[channel] = $.extend({}, Setting.filteredCategory.default);
+                }
+                Setting.filteredCategory[channel][item.id] = $(item).is(':checked');
+            });
+
+            let blockUser = $('.script-setting-wrapper #blockUser').val();
+            if(blockUser == "") {
+                Setting.blockUser = [];
+            }
+            else {
+                Setting.blockUser = blockUser.split('\n');
+            }
+
+            let blockKeyword = $('.script-setting-wrapper #blockKeyword').val();
+            if(blockKeyword == "") {
+                Setting.blockKeyword = [];
+            }
+            else {
+                Setting.blockKeyword = blockKeyword.split('\n');
+            }
+
+            saveSetting();
+            location.reload();
+        });
+
+        $('#closeSetting').click(function() {
+            $('.script-setting-wrapper').fadeOut(200, function() {
+                $('.content-wrapper').fadeIn(200);
+            });
         });
     });
 }
 
 function applySettingView() {
-    $('.script-setting-wrapper #useRefresh').val(Setting.refreshTime.value);
-    $('.script-setting-wrapper #hideAvatar').val(Setting.hideAvatar.value ? 1 : 0);
-    $('.script-setting-wrapper #hideContentImage').val(Setting.hideContentImage.value ? 1 : 0);
+    $('.script-setting-wrapper #useRefresh').val(Setting.refreshTime);
+    $('.script-setting-wrapper #hideAvatar').val(Setting.hideAvatar ? 1 : 0);
+    $('.script-setting-wrapper #hideContentImage').val(Setting.hideContentImage ? 1 : 0);
     
     for(key in Setting.filteredCategory[channel]) {
         if(Setting.filteredCategory[channel][key])
             $(`.category-group input#${$.escapeSelector(key)}`).prop('checked', 'checked');
     }
+
+    $('.script-setting-wrapper #blockUser').text(Setting.blockUser.join('\n'));
+    $('.script-setting-wrapper #blockKeyword').text(Setting.blockKeyword.join('\n'));
 }
 // #endregion
 
-var article_list = null;
+// #region Initilize
 var channel = null;
-async function init() {
+async function initialize() {
     addCSS(HEADER_CSS);
-    addCSS(SETTING_CSS);
+    addCSS(HIDE_PREVIEW_CSS);
 
-    addCSS(LOADER_CSS);
-
-    var state;
     var pathname = location.pathname.split('/');
 
     if(pathname[1] != 'b') {
@@ -1057,50 +1202,53 @@ async function init() {
     }
 
     channel = pathname[2];
+    await loadSetting();
 
     if(pathname[3] == undefined || pathname[3] == '') {
-        state = 'board';
+        initBoard(false);
     }
     else if(pathname[4] == 'edit') {
-        state = 'edit';
+        initWrite(true);
     }
     else if(pathname[3] == 'write') {
-        state = 'write';
+        initWrite(false);
     }
     else if(/[0-9]+/.test(pathname[3])) {
-        state = 'article';
+        initBoard(true);
     }
 
-    await loadSetting();
-    
-    switch(state) {
-        case 'article':
-            if(Setting.hideAvatar.value) hideAvatar();
-            if(Setting.hideContentImage.value) hideContentImage();
-            break;
-        case 'write':
-            applyMyImage();
-        case 'edit':
-            applyAdvancedImgUploader();
-            break;
+    addSettingMenu();
+}
+
+var article_list = null;
+function initBoard(isArticleView) {
+    article_list = $('.board-article-list .list-table, .included-article-list .list-table');
+
+    if(isArticleView) {
+        if(Setting.hideAvatar) hideAvatar();
+        if(Setting.hideContentImage) hideContentImage();
+        addReplyRefreshBtn();
+        applyImageMenu();
+        document.addEventListener('DOMContentLoaded', () => {
+            applyCommentBlock();
+        });
     }
 
-    $(document).ready(function() {
-        article_list = $('.board-article-list .list-table, .included-article-list .list-table');
-
-        addNewSettingMenu();
-
-        switch(state) {
-            case 'article':
-                applyReplyRefreshBtn();
-                applyImageMenu();
-            case 'board':
-                if(Setting.refreshTime.value > 0) initRefresher();
-                applyHideNotice();
-                applyPreviewFilter();
-                break;
-        }
+    initRefresher();
+    applyHideNotice();
+    applyPreviewFilter();
+    document.addEventListener('DOMContentLoaded', () => {
+        applyBoardBlock();
     });
 }
 
-init();
+function initWrite(isEditView) {
+    if(!isEditView) {
+        applyMyImage();
+    }
+
+    applyAdvancedImgUploader();
+}
+// #endregion
+
+initialize();
