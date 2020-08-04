@@ -541,8 +541,6 @@ const HIDE_PREVIEW_CSS = `
     }
 `;
 function applyPreviewFilter() {
-    addCSS(HIDE_PREVIEW_CSS);
-
     article_list.children().each(function(index, item) {
         var tag = $(item).find('span.tag').text();
         tag = (tag == "") ? "일반" : tag;
@@ -1107,6 +1105,7 @@ function applySettingView() {
 var channel = null;
 async function initialize() {
     addCSS(HEADER_CSS);
+    addCSS(HIDE_PREVIEW_CSS);
 
     var pathname = location.pathname.split('/');
 
