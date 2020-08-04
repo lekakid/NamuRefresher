@@ -2,7 +2,7 @@
 // @name        NamuRefresher
 // @icon        https://image.flaticon.com/icons/svg/929/929614.svg
 // @author      LeKAKiD
-// @version     1.9.5
+// @version     1.10.0
 // @include     https://arca.live/*
 // @include     https://*.arca.live/*
 // @run-at      document-start
