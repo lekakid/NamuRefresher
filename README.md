@@ -1,5 +1,9 @@
 # Namu Refresher
 
+2.0 소개
+---------
+리프레셔의 2.0 버전이 있습니다. [여기](https://github.com/lekakid/ArcaRefresher)로 이동해주세요.
+
 개요
 ----
 Violentmonkey 확장프로그램 기반 [아카라이브](https://arca.live/) 유저 스크립트입니다.
